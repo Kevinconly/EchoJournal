@@ -1,6 +1,6 @@
 import 'package:isar/isar.dart';
 import 'package:path_provider/path_provider.dart';
-import '../models/journal_entry_model.dart';
+import '../../models/journal_entry_model.dart';
 
 class DatabaseService {
   static late Isar _isar;
@@ -53,7 +53,7 @@ class DatabaseService {
   static Future<List<JournalEntryModel>> getEntriesByMood(String mood) async {
     try {
       return await _isar.journalEntryModels
-          .where()
+          .filter()
           .moodEqualTo(mood)
           .sortByCreatedAtDesc()
           .findAll();
@@ -68,7 +68,7 @@ class DatabaseService {
   ) async {
     try {
       return await _isar.journalEntryModels
-          .where()
+          .filter()
           .createdAtBetween(startDate, endDate)
           .sortByCreatedAtDesc()
           .findAll();
@@ -118,7 +118,7 @@ class DatabaseService {
   static Future<List<JournalEntryModel>> searchEntries(String query) async {
     try {
       return await _isar.journalEntryModels
-          .where()
+          .filter()
           .contentContains(query, caseSensitive: false)
           .sortByCreatedAtDesc()
           .findAll();

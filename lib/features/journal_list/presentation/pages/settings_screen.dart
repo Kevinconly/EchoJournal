@@ -36,7 +36,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
         _lastBackupPath = prefs.getString('last_backup_path');
       });
     } catch (e) {
-      print('Error loading settings: $e');
+      debugPrint('Error loading settings: $e');
     }
   }
 
@@ -293,7 +293,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
       trailing: Switch(
         value: _isDarkMode,
         onChanged: _saveDarkMode,
-        activeColor: Theme.of(context).colorScheme.primary,
+        activeThumbColor: Theme.of(context).colorScheme.primary,
       ),
       contentPadding: const EdgeInsets.symmetric(horizontal: 0, vertical: 4),
       shape: RoundedRectangleBorder(

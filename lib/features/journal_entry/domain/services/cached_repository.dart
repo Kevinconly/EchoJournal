@@ -1,5 +1,6 @@
 import 'dart:async';
 import '../entities/journal_entry.dart';
+import '../entities/mood.dart';
 import '../repositories/journal_repository.dart';
 
 class CachedRepository implements JournalRepository {
@@ -17,7 +18,7 @@ class CachedRepository implements JournalRepository {
     
     // Return cached data if valid
     if (_cache.containsKey(cacheKey) && 
-        now.difference(_cacheTimestamps[cacheKey]!).inDuration(_cacheTimeout).inMinutes < _cacheTimeout.inMinutes) {
+        now.difference(_cacheTimestamps[cacheKey]!).inMinutes < _cacheTimeout.inMinutes) {
       return _cache[cacheKey]!;
     }
     
@@ -63,13 +64,13 @@ class CachedRepository implements JournalRepository {
   }
 
   @override
-  Future<List<JournalEntryEntity>> getEntriesByMood(String mood) async {
+  Future<List<JournalEntryEntity>> getEntriesByMood(Mood mood) async {
     final cacheKey = 'entries_by_mood_$mood';
     final now = DateTime.now();
     
     // Return cached data if valid
     if (_cache.containsKey(cacheKey) && 
-        now.difference(_cacheTimestamps[cacheKey]!).inDuration(_cacheTimeout).inMinutes < _cacheTimeout.inMinutes) {
+        now.difference(_cacheTimestamps[cacheKey]!).inMinutes < _cacheTimeout.inMinutes) {
       return _cache[cacheKey]!;
     }
     
@@ -91,7 +92,7 @@ class CachedRepository implements JournalRepository {
     
     // Return cached data if valid
     if (_cache.containsKey(cacheKey) && 
-        now.difference(_cacheTimestamps[cacheKey]!).inDuration(_cacheTimeout).inMinutes < _cacheTimeout.inMinutes) {
+        now.difference(_cacheTimestamps[cacheKey]!).inMinutes < _cacheTimeout.inMinutes) {
       return _cache[cacheKey]!;
     }
     
@@ -113,7 +114,7 @@ class CachedRepository implements JournalRepository {
     
     // Return cached data if valid
     if (_cache.containsKey(cacheKey) && 
-        now.difference(_cacheTimestamps[cacheKey]!).inDuration(_cacheTimeout).inMinutes < _cacheTimeout.inMinutes) {
+        now.difference(_cacheTimestamps[cacheKey]!).inMinutes < _cacheTimeout.inMinutes) {
       return _cache[cacheKey]!;
     }
     
@@ -131,5 +132,24 @@ class CachedRepository implements JournalRepository {
   void _invalidateCache() {
     _cache.clear();
     _cacheTimestamps.clear();
+  }
+
+  @override
+  Future<void> updateEntry(JournalEntryEntity entry) async {
+    try {
+      await _repository.updateEntry(entry);
+      _invalidateCache();
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  @override
+  Future<int> getEntryCount() async {
+    try {
+      return await _repository.getEntryCount();
+    } catch (e) {
+      rethrow;
+    }
   }
 }

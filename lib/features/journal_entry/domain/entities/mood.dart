@@ -1,8 +1,8 @@
 enum Mood {
   happy('😊', 'Happy'),
-  calm('�', 'Calm'),
-  sad('�', 'Sad'),
-  stressed('�', 'Stressed'),
+  calm('😌', 'Calm'),
+  sad('😢', 'Sad'),
+  stressed('😰', 'Stressed'),
   excited('🎉', 'Excited');
 
   const Mood(this.emoji, this.label);

@@ -57,7 +57,7 @@ class DatabaseService {
   static Future<List<JournalEntry>> getEntriesByMood(String mood) async {
     try {
       return await _isar.journalEntrys
-          .where()
+          .filter()
           .moodEqualTo(mood)
           .sortByTimestampDesc()
           .findAll();
@@ -73,7 +73,7 @@ class DatabaseService {
   ) async {
     try {
       return await _isar.journalEntrys
-          .where()
+          .filter()
           .timestampBetween(startDate, endDate)
           .sortByTimestampDesc()
           .findAll();
@@ -128,7 +128,7 @@ class DatabaseService {
   static Future<List<JournalEntry>> searchEntries(String query) async {
     try {
       return await _isar.journalEntrys
-          .where()
+          .filter()
           .textContains(query, caseSensitive: false)
           .sortByTimestampDesc()
           .findAll();

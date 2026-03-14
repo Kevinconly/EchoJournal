@@ -68,31 +68,26 @@ class _AnimatedFABState extends State<AnimatedFAB>
           scale: _scaleAnimation.value,
           child: Transform.rotate(
             angle: _rotationAnimation.value,
-            child: child,
+            child: ScaleTransition(
+              scale: _scaleAnimation,
+              child: FloatingActionButton(
+                onPressed: () {
+                  _animate();
+                  widget.onPressed();
+                },
+                tooltip: widget.tooltip,
+                elevation: 8,
+                backgroundColor: Theme.of(context).colorScheme.primary,
+                foregroundColor: Theme.of(context).colorScheme.onPrimary,
+                child: Icon(
+                  widget.icon,
+                  size: 24,
+                ),
+              ),
+            ),
           ),
         );
       },
-    );
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return ScaleTransition(
-      scale: _scaleAnimation,
-      child: FloatingActionButton(
-        onPressed: () {
-          _animate();
-          widget.onPressed();
-        },
-        tooltip: widget.tooltip,
-        elevation: 8,
-        backgroundColor: Theme.of(context).colorScheme.primary,
-        foregroundColor: Theme.of(context).colorScheme.onPrimary,
-        child: Icon(
-          widget.icon,
-          size: 24,
-        ),
-      ),
     );
   }
 }

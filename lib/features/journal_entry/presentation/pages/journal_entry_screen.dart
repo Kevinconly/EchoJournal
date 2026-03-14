@@ -1,14 +1,15 @@
 import 'package:flutter/material.dart';
-import '../../../domain/entities/journal_entry.dart';
-import '../../../domain/entities/mood.dart';
-import '../../../domain/usecases/save_journal_entry_usecase.dart';
-import '../../../data/repositories/journal_repository_impl.dart';
-import '../../../data/datasources/local/database_service.dart';
+import '../../../journal_entry/domain/entities/journal_entry.dart';
+import '../../../journal_entry/domain/entities/mood.dart';
+import '../../../journal_entry/domain/repositories/journal_repository.dart';
+import '../../../journal_entry/data/repositories/journal_repository_impl.dart';
+import '../../../journal_entry/data/datasources/local/database_service.dart';
+import '../../../journal_entry/domain/usecases/save_journal_entry_usecase.dart';
+import '../widgets/journal_text_field.dart';
+import '../widgets/mood_selector.dart';
+import '../widgets/tags_input.dart';
 import '../../../../core/constants/app_constants.dart';
 import '../../../../core/theme/app_theme.dart';
-import '../widgets/mood_selector.dart';
-import '../widgets/journal_text_field.dart';
-import '../widgets/tags_input.dart';
 
 class JournalEntryScreen extends StatefulWidget {
   const JournalEntryScreen({super.key});

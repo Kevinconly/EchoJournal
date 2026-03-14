@@ -29,7 +29,7 @@ class ReflectionEngine {
       'What steps can you take to prepare for this exciting event?',
     ],
     'excitement': [
-      'What's fueling this excitement?',
+      'What is fueling this excitement?',
       'How long have you been anticipating this?',
       'What does this excitement tell you about your values?',
     ],

@@ -5,25 +5,23 @@ import '../datasources/local/database_service.dart';
 import '../models/journal_entry_model.dart';
 
 class JournalRepositoryImpl implements JournalRepository {
-  final DatabaseService _databaseService;
-
-  JournalRepositoryImpl(this._databaseService);
+  JournalRepositoryImpl();
 
   @override
   Future<void> saveEntry(JournalEntryEntity entry) async {
     final model = JournalEntryModel.fromEntity(entry);
-    await _databaseService.saveEntry(model);
+    await DatabaseService.saveEntry(model);
   }
 
   @override
   Future<List<JournalEntryEntity>> getAllEntries() async {
-    final models = await _databaseService.getAllEntries();
+    final models = await DatabaseService.getAllEntries();
     return models.map((model) => model.toEntity()).toList();
   }
 
   @override
   Future<List<JournalEntryEntity>> getEntriesByMood(Mood mood) async {
-    final models = await _databaseService.getEntriesByMood(mood.label);
+    final models = await DatabaseService.getEntriesByMood(mood.label);
     return models.map((model) => model.toEntity()).toList();
   }
 
@@ -32,34 +30,34 @@ class JournalRepositoryImpl implements JournalRepository {
     DateTime startDate,
     DateTime endDate,
   ) async {
-    final models = await _databaseService.getEntriesByDateRange(startDate, endDate);
+    final models = await DatabaseService.getEntriesByDateRange(startDate, endDate);
     return models.map((model) => model.toEntity()).toList();
   }
 
   @override
   Future<void> updateEntry(JournalEntryEntity entry) async {
     final model = JournalEntryModel.fromEntity(entry);
-    await _databaseService.updateEntry(model);
+    await DatabaseService.updateEntry(model);
   }
 
   @override
   Future<void> deleteEntry(int id) async {
-    await _databaseService.deleteEntry(id);
+    await DatabaseService.deleteEntry(id);
   }
 
   @override
   Future<void> deleteAllEntries() async {
-    await _databaseService.deleteAllEntries();
+    await DatabaseService.deleteAllEntries();
   }
 
   @override
   Future<int> getEntryCount() async {
-    return await _databaseService.getEntryCount();
+    return await DatabaseService.getEntryCount();
   }
 
   @override
   Future<List<JournalEntryEntity>> searchEntries(String query) async {
-    final models = await _databaseService.searchEntries(query);
+    final models = await DatabaseService.searchEntries(query);
     return models.map((model) => model.toEntity()).toList();
   }
 }

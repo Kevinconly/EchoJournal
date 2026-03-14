@@ -137,7 +137,7 @@ class _JournalEntryScreenState extends State<JournalEntryScreen> {
             ),
             const SizedBox(height: 12),
             
-            Container(
+            SizedBox(
               height: 80,
               child: ListView.builder(
                 scrollDirection: Axis.horizontal,
@@ -157,7 +157,7 @@ class _JournalEntryScreenState extends State<JournalEntryScreen> {
                       margin: const EdgeInsets.only(right: 8),
                       decoration: BoxDecoration(
                         color: isSelected 
-                          ? Theme.of(context).primaryColor.withOpacity(0.2)
+                          ? Theme.of(context).primaryColor.withValues(alpha: 0.2)
                           : Colors.grey[100],
                         borderRadius: BorderRadius.circular(12),
                         border: Border.all(

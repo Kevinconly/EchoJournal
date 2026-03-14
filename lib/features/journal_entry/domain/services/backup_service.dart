@@ -10,7 +10,7 @@ import '../../data/datasources/local/database_service.dart';
 
 class BackupService {
   static JournalRepositoryImpl get _repository => 
-      JournalRepositoryImpl(DatabaseService());
+      JournalRepositoryImpl();
 
   /// Export all journal entries to JSON
   static Future<String> exportEntriesToJson() async {

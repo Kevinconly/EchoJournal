@@ -2,12 +2,8 @@ import 'package:flutter/material.dart';
 import '../../../journal_entry/domain/entities/journal_entry.dart';
 import '../../../journal_entry/domain/services/reflection_engine.dart';
 import '../../../journal_entry/domain/services/similarity_search_service.dart';
-import '../../../journal_entry/domain/repositories/journal_repository.dart';
 import '../../../journal_entry/data/repositories/journal_repository_impl.dart';
 import '../../../journal_entry/data/datasources/local/database_service.dart';
-import '../../../../shared/widgets/loading_overlay.dart';
-import '../../../../shared/utils/error_handler.dart';
-import '../../../../core/constants/app_constants.dart';
 
 class ReflectionChatScreen extends StatefulWidget {
   final JournalEntryEntity entry;
@@ -108,7 +104,6 @@ class _ReflectionChatScreenState extends State<ReflectionChatScreen> {
       }
     } catch (e) {
       // Silently fail if similarity search fails
-      print('Error finding similar entries: $e');
     }
   }
 
@@ -211,7 +206,7 @@ class _ReflectionChatScreenState extends State<ReflectionChatScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Theme.of(context).colorScheme.background,
+      backgroundColor: Theme.of(context).colorScheme.surface,
       appBar: AppBar(
         title: const Text('Reflection Chat'),
         backgroundColor: Theme.of(context).colorScheme.surface,
@@ -241,7 +236,7 @@ class _ReflectionChatScreenState extends State<ReflectionChatScreen> {
                     decoration: BoxDecoration(
                       border: Border(
                         bottom: BorderSide(
-                          color: Theme.of(context).colorScheme.outline.withOpacity(0.2),
+                          color: Theme.of(context).colorScheme.outline.withValues(alpha: 0.2),
                         ),
                       ),
                     ),
@@ -274,6 +269,14 @@ class _ReflectionChatScreenState extends State<ReflectionChatScreen> {
                               ),
                             ],
                           ),
+                      ],
+                    ),
+                  ),
+                  
+                  // Messages List
+                  Expanded(
+                    child: _buildMessagesList(),
+                  ),
                   
                   // Message Input Area
                   _buildMessageInput(),
@@ -295,7 +298,7 @@ class _ReflectionChatScreenState extends State<ReflectionChatScreen> {
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: Theme.of(context).colorScheme.shadow.withOpacity(0.1),
+            color: Theme.of(context).colorScheme.shadow.withValues(alpha: 0.1),
             blurRadius: 8,
             offset: const Offset(0, 2),
           ),
@@ -310,7 +313,7 @@ class _ReflectionChatScreenState extends State<ReflectionChatScreen> {
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                 decoration: BoxDecoration(
-                  color: Theme.of(context).colorScheme.primary.withOpacity(0.2),
+                  color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.2),
                   borderRadius: BorderRadius.circular(20),
                 ),
                 child: Row(
@@ -358,6 +361,25 @@ class _ReflectionChatScreenState extends State<ReflectionChatScreen> {
     );
   }
 
+  Widget _buildMessagesList() {
+    return ListView.builder(
+      controller: _scrollController,
+      padding: const EdgeInsets.symmetric(vertical: 8),
+      itemCount: _messages.length + (_isTyping ? 1 : 0),
+      itemBuilder: (context, index) {
+        if (index == _messages.length && _isTyping) {
+          return const _TypingIndicator();
+        }
+        
+        final message = _messages[index];
+        return _MessageBubble(
+          message: message,
+          isUser: message.isUser,
+        );
+      },
+    );
+  }
+
   Widget _buildMessageInput() {
     return Container(
       padding: const EdgeInsets.all(16),
@@ -365,7 +387,7 @@ class _ReflectionChatScreenState extends State<ReflectionChatScreen> {
         color: Theme.of(context).colorScheme.surface,
         border: Border(
           top: BorderSide(
-            color: Theme.of(context).colorScheme.outline.withOpacity(0.2),
+            color: Theme.of(context).colorScheme.outline.withValues(alpha: 0.2),
           ),
         ),
       ),
@@ -379,13 +401,13 @@ class _ReflectionChatScreenState extends State<ReflectionChatScreen> {
                   hintText: _isTyping ? 'AI is thinking...' : 'Share your thoughts...',
                   border: InputBorder.none,
                   filled: true,
-                  fillColor: Theme.of(context).colorScheme.surfaceVariant,
+                  fillColor: Theme.of(context).colorScheme.surfaceContainerHighest,
                   contentPadding: const EdgeInsets.symmetric(
                     horizontal: 16,
                     vertical: 12,
                   ),
                   hintStyle: TextStyle(
-                    color: Theme.of(context).colorScheme.onSurfaceVariant.withOpacity(0.6),
+                    color: Theme.of(context).colorScheme.onSurfaceVariant.withValues(alpha: 0.6),
                   ),
                 ),
                 maxLines: null,
@@ -479,16 +501,16 @@ class _MessageBubble extends StatelessWidget {
               decoration: BoxDecoration(
                 color: isUser
                     ? Theme.of(context).colorScheme.primary
-                    : Theme.of(context).colorScheme.surfaceVariant,
+                    : Theme.of(context).colorScheme.surfaceContainerHighest,
                 borderRadius: BorderRadius.circular(20).copyWith(
-                  bottomLeft: isUser ? 20 : 4,
-                  bottomRight: isUser ? 4 : 20,
-                  topLeft: isUser ? 20 : 4,
-                  topRight: isUser ? 4 : 20,
+                  bottomLeft: Radius.circular(isUser ? 20 : 4),
+                  bottomRight: Radius.circular(isUser ? 4 : 20),
+                  topLeft: Radius.circular(isUser ? 20 : 4),
+                  topRight: Radius.circular(isUser ? 4 : 20),
                 ),
                 boxShadow: [
                   BoxShadow(
-                    color: Theme.of(context).colorScheme.shadow.withOpacity(0.1),
+                    color: Theme.of(context).colorScheme.shadow.withValues(alpha: 0.1),
                     blurRadius: 4,
                     offset: const Offset(0, 2),
                   ),
@@ -550,11 +572,11 @@ class _TypingIndicator extends StatelessWidget {
             decoration: BoxDecoration(
               color: Theme.of(context).colorScheme.surfaceVariant,
               borderRadius: BorderRadius.circular(20).copyWith(
-                bottomRight: 4,
+                bottomRight: const Radius.circular(4),
               ),
               boxShadow: [
                 BoxShadow(
-                  color: Theme.of(context).colorScheme.shadow.withOpacity(0.1),
+                  color: Theme.of(context).colorScheme.shadow.withValues(alpha: 0.1),
                   blurRadius: 4,
                   offset: const Offset(0, 2),
                 ),
@@ -627,7 +649,7 @@ class _DotState extends State<_Dot> with SingleTickerProviderStateMixin {
           width: 6,
           height: 6,
           decoration: BoxDecoration(
-            color: Theme.of(context).colorScheme.onSurfaceVariant.withOpacity(_animation.value),
+            color: Theme.of(context).colorScheme.onSurfaceContainerHighest.withValues(alpha: _animation.value),
             shape: BoxShape.circle,
           ),
         );

@@ -86,7 +86,7 @@ class JournalCard extends StatelessWidget {
               const SizedBox(height: 8),
               
               // Tags if any
-              if (entry is JournalEntryEntity && (entry as dynamic).tags?.isNotEmpty == true) ...[
+              if (entry is JournalEntryEntity) ...[
                 Wrap(
                   spacing: 6,
                   runSpacing: 4,
@@ -94,7 +94,7 @@ class JournalCard extends StatelessWidget {
                     return Container(
                       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                       decoration: BoxDecoration(
-                        color: Theme.of(context).colorScheme.surfaceVariant,
+                        color: Theme.of(context).colorScheme.surfaceContainerHighest,
                         borderRadius: BorderRadius.circular(12),
                       ),
                       child: Text(

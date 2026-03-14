@@ -147,7 +147,7 @@ class _InsightsScreenState extends State<InsightsScreen> {
                 '• $error',
                 style: const TextStyle(fontSize: 12, color: Colors.red),
               )),
-              if (result.errors!.length > 5)
+              if (result.errors!.isNotEmpty)
                 Text('... and ${result.errors!.length - 5} more errors'),
             ],
           ],
@@ -189,8 +189,6 @@ class _InsightsScreenState extends State<InsightsScreen> {
         percentage: double.parse(percentage),
         color: _getMoodColor(mood),
       );
-    }).toList()
-      ..sort((a, b) => b.count.compareTo(a.count)); // Sort by count descending
   }
 
   Color _getMoodColor(Mood mood) {
@@ -326,7 +324,7 @@ class _InsightsScreenState extends State<InsightsScreen> {
                 height: 300,
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
-                  color: Theme.of(context).colorScheme.surfaceVariant,
+                  color: Theme.of(context).colorScheme.surfaceContainerHighest,
                   borderRadius: BorderRadius.circular(AppConstants.cardRadius),
                 ),
                 child: PieChart(
@@ -344,7 +342,6 @@ class _InsightsScreenState extends State<InsightsScreen> {
                           fontWeight: FontWeight.bold,
                           color: Colors.white,
                         ),
-                        titlePositionPercentageOffset: 0.6,
                       );
                     }).toList(),
                     centerSpaceRadius: 60,
@@ -378,7 +375,7 @@ class _InsightsScreenState extends State<InsightsScreen> {
                 decoration: BoxDecoration(
                   color: Theme.of(context).colorScheme.surface,
                   border: Border.all(
-                    color: Theme.of(context).colorScheme.outline.withOpacity(0.2),
+                    color: Theme.of(context).colorScheme.outline.withValues(alpha: 0.2),
                   ),
                   borderRadius: BorderRadius.circular(AppConstants.cardRadius),
                 ),
@@ -519,9 +516,6 @@ class _InsightsScreenState extends State<InsightsScreen> {
       ),
     );
   }
-}
-
-class PieChartSectionData {
   final Mood mood;
   final int count;
   final double percentage;
