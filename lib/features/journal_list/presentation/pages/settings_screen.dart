@@ -24,7 +24,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
   @override
   void initState() {
     super.initState();
-    _repository = JournalRepositoryImpl(DatabaseService());
+    _repository = JournalRepositoryImpl();
     _loadSettings();
   }
 

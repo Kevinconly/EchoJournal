@@ -33,7 +33,7 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   void initState() {
     super.initState();
-    _repository = CachedRepository(JournalRepositoryImpl(DatabaseService()));
+    _repository = CachedRepository(JournalRepositoryImpl());
     _loadEntries();
   }
 
@@ -182,12 +182,13 @@ class _HomeScreenState extends State<HomeScreen> {
         ],
       ),
       floatingActionButton: AnimatedFAB(
-        onPressed: () {
-          Navigator.of(context).push(
+        onPressed: () async {
+          await Navigator.of(context).push(
             MaterialPageRoute(
               builder: (context) => const JournalEntryScreen(),
-            ).then((_) => _loadEntries()), // Refresh entries when coming back
+            ),
           );
+          _loadEntries(); // Refresh entries when coming back
         },
         icon: Icons.add,
         tooltip: 'Create new entry',

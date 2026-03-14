@@ -28,7 +28,7 @@ class _ReflectionChatScreenState extends State<ReflectionChatScreen> {
   void initState() {
     super.initState();
     _similarityService = SimilaritySearchService(
-      JournalRepositoryImpl(DatabaseService()),
+      JournalRepositoryImpl(),
     );
     _addInitialAssistantMessage();
   }
@@ -269,20 +269,21 @@ class _ReflectionChatScreenState extends State<ReflectionChatScreen> {
                               ),
                             ],
                           ),
-                      ],
+                        ],
+                      ),
                     ),
                   ),
-                  
-                  // Messages List
-                  Expanded(
-                    child: _buildMessagesList(),
-                  ),
-                  
-                  // Message Input Area
-                  _buildMessageInput(),
                 ],
               ),
-            ),
+                  
+              // Messages List
+              Expanded(
+                child: _buildMessagesList(),
+              ),
+              
+              // Message Input Area
+              _buildMessageInput(),
+            ],
           ),
         ],
       ),
@@ -430,7 +431,7 @@ class _ReflectionChatScreenState extends State<ReflectionChatScreen> {
                 child: IconButton(
                   onPressed: _isTyping ? null : _sendMessage,
                   icon: _isTyping
-                      ? const SizedBox(
+                      ? SizedBox(
                           width: 20,
                           height: 20,
                           child: CircularProgressIndicator(
@@ -649,7 +650,7 @@ class _DotState extends State<_Dot> with SingleTickerProviderStateMixin {
           width: 6,
           height: 6,
           decoration: BoxDecoration(
-            color: Theme.of(context).colorScheme.onSurfaceContainerHighest.withValues(alpha: _animation.value),
+            color: Theme.of(context).colorScheme.onSurfaceVariant.withValues(alpha: _animation.value),
             shape: BoxShape.circle,
           ),
         );

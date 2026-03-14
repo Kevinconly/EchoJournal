@@ -70,7 +70,7 @@ class ReflectionEngine {
     ],
     'anxiety': [
       'What uncertain situation is triggering this anxiety?',
-      'What's the worst-case scenario, and how likely is it?',
+      'What is the worst-case scenario, and how likely is it?',
       'What small action could help you regain a sense of control?',
     ],
     'calm': [
@@ -119,7 +119,7 @@ class ReflectionEngine {
       'How can you sit with this uncertainty without rushing?',
     ],
     'disappointed': [
-      'What expectation wasn't met that led to this disappointment?',
+      'What expectation was not met that led to this disappointment?',
       'How can you reframe this situation with self-compassion?',
       'What can you learn from this unmet expectation?',
     ],

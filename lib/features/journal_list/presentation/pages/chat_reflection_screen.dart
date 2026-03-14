@@ -313,8 +313,8 @@ class _MessageBubble extends StatelessWidget {
                   ? Theme.of(context).colorScheme.primary
                   : Theme.of(context).colorScheme.surfaceVariant,
                 borderRadius: BorderRadius.circular(20).copyWith(
-                  bottomLeft: isUser ? 20 : 4,
-                  bottomRight: isUser ? 4 : 20,
+                  bottomLeft: Radius.circular(isUser ? 20 : 4),
+                  bottomRight: Radius.circular(isUser ? 4 : 20),
                 ),
               ),
               child: Text(
@@ -369,7 +369,7 @@ class _TypingIndicator extends StatelessWidget {
             decoration: BoxDecoration(
               color: Theme.of(context).colorScheme.surfaceVariant,
               borderRadius: BorderRadius.circular(20).copyWith(
-                bottomRight: 4,
+                bottomRight: const Radius.circular(4),
               ),
             ),
             child: Row(

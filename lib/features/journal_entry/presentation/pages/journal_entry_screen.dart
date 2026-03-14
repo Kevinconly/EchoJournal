@@ -156,7 +156,7 @@ class _JournalEntryScreenState extends State<JournalEntryScreen> {
                 try {
                   // For now, we'll use a simple implementation
                   // In a real app, this would be properly injected
-                  final repository = JournalRepositoryImpl(DatabaseService());
+                  final repository = JournalRepositoryImpl();
                   final saveUseCase = SaveJournalEntryUseCase(repository);
                   await _saveEntry(saveUseCase);
                 } catch (e) {
