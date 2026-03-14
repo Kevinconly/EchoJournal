@@ -27,7 +27,7 @@ class _InsightsScreenState extends State<InsightsScreen> {
   @override
   void initState() {
     super.initState();
-    _repository = JournalRepositoryImpl(DatabaseService());
+    _repository = JournalRepositoryImpl();
     _loadEntries();
   }
 
@@ -184,11 +184,17 @@ class _InsightsScreenState extends State<InsightsScreen> {
       final percentage = (count / totalEntries * 100).toStringAsFixed(1);
       
       return PieChartSectionData(
-        mood: mood,
-        count: count,
-        percentage: double.parse(percentage),
+        value: double.parse(percentage),
+        title: '${mood.label}\n${double.parse(percentage).toStringAsFixed(1)}%',
         color: _getMoodColor(mood),
+        radius: 60,
+        titleStyle: const TextStyle(
+          fontSize: 12,
+          fontWeight: FontWeight.bold,
+          color: Colors.white,
+        ),
       );
+    }).toList();
   }
 
   Color _getMoodColor(Mood mood) {
@@ -329,21 +335,7 @@ class _InsightsScreenState extends State<InsightsScreen> {
                 ),
                 child: PieChart(
                   PieChartData(
-                    sections: _pieChartData.asMap().entries.map((entry) {
-                      final index = entry.key;
-                      final data = entry.value;
-                      return PieChartSectionData(
-                        value: data.percentage,
-                        title: '${data.mood.label}\n${data.percentage.toStringAsFixed(1)}%',
-                        color: data.color,
-                        radius: 60,
-                        titleStyle: TextStyle(
-                          fontSize: 12,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.white,
-                        ),
-                      );
-                    }).toList(),
+                    sections: _pieChartData,
                     centerSpaceRadius: 60,
                     centerSpaceColor: Theme.of(context).colorScheme.surface,
                     sectionsSpace: 2,
@@ -516,15 +508,4 @@ class _InsightsScreenState extends State<InsightsScreen> {
       ),
     );
   }
-  final Mood mood;
-  final int count;
-  final double percentage;
-  final Color color;
-
-  PieChartSectionData({
-    required this.mood,
-    required this.count,
-    required this.percentage,
-    required this.color,
-  });
 }
