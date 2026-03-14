@@ -5,12 +5,14 @@ class JournalEntryEntity {
   final String text;
   final Mood mood;
   final DateTime timestamp;
+  final List<String> tags;
 
   const JournalEntryEntity({
     this.id,
     required this.text,
     required this.mood,
     required this.timestamp,
+    this.tags = const [],
   });
 
   JournalEntryEntity copyWith({
@@ -18,12 +20,14 @@ class JournalEntryEntity {
     String? text,
     Mood? mood,
     DateTime? timestamp,
+    List<String>? tags,
   }) {
     return JournalEntryEntity(
       id: id ?? this.id,
       text: text ?? this.text,
       mood: mood ?? this.mood,
       timestamp: timestamp ?? this.timestamp,
+      tags: tags ?? this.tags,
     );
   }
 
@@ -46,12 +50,21 @@ class JournalEntryEntity {
         other.id == id &&
         other.text == text &&
         other.mood == mood &&
-        other.timestamp == timestamp;
+        other.timestamp == timestamp &&
+        _listEquals(other.tags, tags);
   }
 
   @override
   int get hashCode {
-    return id.hashCode ^ text.hashCode ^ mood.hashCode ^ timestamp.hashCode;
+    return id.hashCode ^ text.hashCode ^ mood.hashCode ^ timestamp.hashCode ^ tags.hashCode;
+  }
+
+  bool _listEquals(List<Object> a, List<Object> b) {
+    if (a.length != b.length) return false;
+    for (var i = 0; i < a.length; i++) {
+      if (a[i] != b[i]) return false;
+    }
+    return true;
   }
 
   @override

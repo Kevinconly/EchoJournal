@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import '../../domain/entities/mood.dart';
-import '../../../../core/constants/app_constants.dart';
 
 class MoodSelector extends StatelessWidget {
   final Mood? selectedMood;
@@ -14,7 +13,7 @@ class MoodSelector extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
+    return SizedBox(
       height: 80,
       child: ListView.builder(
         scrollDirection: Axis.horizontal,
@@ -31,7 +30,7 @@ class MoodSelector extends StatelessWidget {
               decoration: BoxDecoration(
                 color: isSelected 
                   ? Theme.of(context).colorScheme.primaryContainer
-                  : Theme.of(context).colorScheme.surfaceVariant,
+                  : Theme.of(context).colorScheme.surfaceContainerHighest,
                 borderRadius: BorderRadius.circular(12),
                 border: Border.all(
                   color: isSelected 

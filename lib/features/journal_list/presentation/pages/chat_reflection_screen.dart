@@ -47,7 +47,6 @@ class _ChatReflectionScreenState extends State<ChatReflectionScreen> {
 
   String _generateInitialReflection() {
     final mood = widget.entry.mood.label.toLowerCase();
-    final content = widget.entry.text;
     
     // Simple reflection logic based on mood and content
     if (mood == 'happy') {
@@ -311,7 +310,7 @@ class _MessageBubble extends StatelessWidget {
               decoration: BoxDecoration(
                 color: isUser
                   ? Theme.of(context).colorScheme.primary
-                  : Theme.of(context).colorScheme.surfaceVariant,
+                  : Theme.of(context).colorScheme.surfaceContainerHighest,
                 borderRadius: BorderRadius.circular(20).copyWith(
                   bottomLeft: Radius.circular(isUser ? 20 : 4),
                   bottomRight: Radius.circular(isUser ? 4 : 20),
@@ -367,7 +366,7 @@ class _TypingIndicator extends StatelessWidget {
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
             decoration: BoxDecoration(
-              color: Theme.of(context).colorScheme.surfaceVariant,
+              color: Theme.of(context).colorScheme.surfaceContainerHighest,
               borderRadius: BorderRadius.circular(20).copyWith(
                 bottomRight: const Radius.circular(4),
               ),
@@ -439,7 +438,7 @@ class _DotState extends State<_Dot> with SingleTickerProviderStateMixin {
           width: 8,
           height: 8,
           decoration: BoxDecoration(
-            color: Theme.of(context).colorScheme.onSurfaceVariant.withOpacity(_animation.value),
+            color: Theme.of(context).colorScheme.onSurfaceVariant.withValues(alpha: _animation.value),
             shape: BoxShape.circle,
           ),
         );

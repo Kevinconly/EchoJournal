@@ -86,11 +86,11 @@ class JournalCard extends StatelessWidget {
               const SizedBox(height: 8),
               
               // Tags if any
-              if (entry is JournalEntryEntity) ...[
+              if (entry.tags.isNotEmpty) ...[
                 Wrap(
                   spacing: 6,
                   runSpacing: 4,
-                  children: ((entry as dynamic).tags as List<String>).take(3).map((tag) {
+                  children: entry.tags.take(3).map((tag) {
                     return Container(
                       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                       decoration: BoxDecoration(

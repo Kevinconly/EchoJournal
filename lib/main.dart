@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'core/theme/app_theme.dart';
 import 'core/constants/app_constants.dart';
 import 'features/journal_list/presentation/pages/home_screen.dart';
-import 'features/journal_entry/data/datasources/local/database_service.dart';
+import 'package:reflectly_ai/services/database_service.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();

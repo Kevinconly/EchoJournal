@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import '../../../journal_entry/domain/entities/journal_entry.dart';
 import '../../../journal_entry/domain/repositories/journal_repository.dart';
 import '../../../journal_entry/data/repositories/journal_repository_impl.dart';
-import '../../../journal_entry/data/datasources/local/database_service.dart';
 import '../../../journal_entry/domain/services/cached_repository.dart';
 import '../widgets/empty_state_widget.dart';
 import '../widgets/journal_card.dart';
@@ -13,7 +12,6 @@ import '../../../journal_entry/presentation/pages/journal_entry_screen.dart';
 import '../../../../shared/widgets/animated_fab.dart';
 import '../../../../shared/utils/error_handler.dart';
 import '../../../../core/constants/app_constants.dart';
-import '../../../../core/theme/app_theme.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -62,12 +60,14 @@ class _HomeScreenState extends State<HomeScreen> {
         _isLoading = false;
       });
       
-      AppErrorHandler.showErrorDialog(
-        context,
-        'Loading Error',
-        'Unable to load your journal entries. Please check your device storage and try again.',
-        onRetry: _loadEntries,
-      );
+      if (mounted) {
+        AppErrorHandler.showErrorDialog(
+          context,
+          'Loading Error',
+          'Unable to load your journal entries. Please check your device storage and try again.',
+          onRetry: _loadEntries,
+        );
+      }
     }
   }
 
@@ -166,7 +166,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   borderRadius: BorderRadius.circular(AppConstants.buttonRadius),
                 ),
                 filled: true,
-                fillColor: Theme.of(context).colorScheme.surfaceVariant,
+                fillColor: Theme.of(context).colorScheme.surfaceContainerHighest,
               ),
               onChanged: _filterEntries,
             ),

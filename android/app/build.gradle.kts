@@ -37,6 +37,17 @@ android {
             signingConfig = signingConfigs.getByName("debug")
         }
     }
+    
+    // Add this to handle namespace issues with older packages
+    configurations.all {
+        resolutionStrategy {
+            eachDependency {
+                if ((requested.group == "com.android.tools.build") && (requested.name.startsWith("gradle"))) {
+                    useVersion("7.6.3")
+                }
+            }
+        }
+    }
 }
 
 flutter {

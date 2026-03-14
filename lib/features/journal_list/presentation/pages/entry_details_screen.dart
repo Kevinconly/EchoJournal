@@ -46,7 +46,7 @@ class EntryDetailsScreen extends StatelessWidget {
             Container(
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
-                color: Theme.of(context).colorScheme.surfaceVariant,
+                color: Theme.of(context).colorScheme.surfaceContainerHighest,
                 borderRadius: BorderRadius.circular(AppConstants.cardRadius),
               ),
               child: Column(
@@ -131,7 +131,7 @@ class EntryDetailsScreen extends StatelessWidget {
             
             // Tags section (if available)
             const SizedBox(height: 24),
-            if (entry is JournalEntryEntity && (entry as dynamic).tags?.isNotEmpty == true) ...[
+            if (entry.tags.isNotEmpty) ...[
               Text(
                 'Tags',
                 style: Theme.of(context).textTheme.titleLarge?.copyWith(
@@ -142,7 +142,7 @@ class EntryDetailsScreen extends StatelessWidget {
               Wrap(
                 spacing: 8,
                 runSpacing: 8,
-                children: ((entry as dynamic).tags as List<String>).map((tag) {
+                children: entry.tags.map((tag) {
                   return Chip(
                     label: Text('#$tag'),
                     backgroundColor: Theme.of(context).colorScheme.primaryContainer,

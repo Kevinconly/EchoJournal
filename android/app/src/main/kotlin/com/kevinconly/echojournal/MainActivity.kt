@@ -1,4 +1,4 @@
-package com.example.reflectly_ai
+package com.kevinconly.echojournal
 
 import io.flutter.embedding.android.FlutterActivity
 

@@ -1,5 +1,4 @@
 import '../entities/journal_entry.dart';
-import '../entities/mood.dart';
 
 class ReflectionEngine {
   static const Map<String, List<String>> _keywordPrompts = {

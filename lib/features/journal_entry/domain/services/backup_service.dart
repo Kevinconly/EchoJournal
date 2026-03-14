@@ -4,9 +4,7 @@ import 'package:file_picker/file_picker.dart';
 import 'package:path_provider/path_provider.dart';
 import '../entities/journal_entry.dart';
 import '../entities/mood.dart';
-import '../../data/models/journal_entry_model.dart';
 import '../../data/repositories/journal_repository_impl.dart';
-import '../../data/datasources/local/database_service.dart';
 
 class BackupService {
   static JournalRepositoryImpl get _repository => 
@@ -22,7 +20,7 @@ class BackupService {
         'content': entry.text,
         'mood': entry.mood.label,
         'createdAt': entry.timestamp.toIso8601String(),
-        'tags': [], // TODO: Add tags when implemented in entity
+        'tags': entry.tags,
       }).toList();
 
       final jsonData = {
@@ -54,30 +52,59 @@ class BackupService {
   }
 
   /// Export and save entries to user-selected location
-  static Future<String> exportBackup() async {
+  static Future<String?> exportBackup() async {
     try {
       // Generate JSON data
       final jsonData = await exportEntriesToJson();
-      
-      // Let user pick save location
-      String? selectedPath = await FilePicker.platform.saveFile(
-        dialogTitle: 'Save EchoJournal Backup',
-        fileName: 'echojournal_backup_${DateTime.now().year}${DateTime.now().month.toString().padLeft(2, '0')}${DateTime.now().day.toString().padLeft(2, '0')}.json',
-        type: FileType.custom,
-        allowedExtensions: ['json'],
-        lockParentWindow: true,
-      );
+
+      // Let user pick save location (desktop & supported mobile platforms).
+      // On Android/iOS, file_picker requires passing bytes when saving.
+      final fileName = 'echojournal_backup_${DateTime.now().year}${DateTime.now().month.toString().padLeft(2, '0')}${DateTime.now().day.toString().padLeft(2, '0')}.json';
+      String? selectedPath;
+      bool pickerSupported = true;
+
+      try {
+        selectedPath = await FilePicker.platform.saveFile(
+          dialogTitle: 'Save EchoJournal Backup',
+          fileName: fileName,
+          type: FileType.custom,
+          allowedExtensions: ['json'],
+          lockParentWindow: true,
+          bytes: utf8.encode(jsonData),
+        );
+      } catch (_) {
+        // Some platforms (e.g. web) may not support saveFile.
+        pickerSupported = false;
+      }
+
+      // If the user explicitly canceled the file picker, return null to allow
+      // callers to treat it as a no-op instead of an error.
+      if (pickerSupported && selectedPath == null) {
+        return null;
+      }
 
       if (selectedPath != null) {
-        final file = File(selectedPath);
-        await file.writeAsString(jsonData);
+        // In some environments (e.g. Android SAF) the returned path may not be a
+        // local file system path. Avoid attempting to write again in that case.
+        if (_isLocalFilePath(selectedPath)) {
+          final file = File(selectedPath);
+          if (!await file.exists()) {
+            await file.writeAsString(jsonData);
+          }
+        }
         return selectedPath;
-      } else {
-        throw Exception('No file selected');
       }
+
+      // Fallback: save to app documents directory
+      return await saveBackupFile(jsonData);
     } catch (e) {
       throw Exception('Failed to export backup: $e');
     }
+  }
+
+  static bool _isLocalFilePath(String path) {
+    // Covers UNIX-like and Windows file paths.
+    return path.startsWith('/') || RegExp(r'^[a-zA-Z]:\\').hasMatch(path);
   }
 
   /// Import entries from JSON file
@@ -177,10 +204,11 @@ class BackupService {
     );
 
     return JournalEntryEntity(
-      id: entryData['id'] as int?,
+      id: null,
       text: entryData['content'] as String,
       mood: mood,
       timestamp: DateTime.parse(entryData['createdAt'] as String),
+      tags: (entryData['tags'] as List<dynamic>?)?.map((e) => e.toString()).toList() ?? [],
     );
   }
 }

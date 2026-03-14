@@ -1,3 +1,7 @@
+// Temporary fix: Comment out entire Isar-based database service
+// This conflicts with our main database service that now uses Hive
+
+/*
 import 'package:isar/isar.dart';
 import 'package:path_provider/path_provider.dart';
 import '../../models/journal_entry_model.dart';
@@ -134,3 +138,4 @@ class DatabaseService {
     }
   }
 }
+*/

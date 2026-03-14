@@ -5,7 +5,6 @@ import '../../../journal_entry/domain/entities/mood.dart';
 import '../../../journal_entry/domain/repositories/journal_repository.dart';
 import '../../../journal_entry/domain/services/backup_service.dart';
 import '../../../journal_entry/data/repositories/journal_repository_impl.dart';
-import '../../../journal_entry/data/datasources/local/database_service.dart';
 import '../../../../core/constants/app_constants.dart';
 
 class InsightsScreen extends StatefulWidget {
@@ -58,7 +57,14 @@ class _InsightsScreenState extends State<InsightsScreen> {
       });
 
       final filePath = await BackupService.exportBackup();
-      
+      if (filePath == null) {
+        // User canceled the save dialog; treat as no-op.
+        setState(() {
+          _isExporting = false;
+        });
+        return;
+      }
+
       setState(() {
         _isExporting = false;
         _lastBackupPath = filePath;
@@ -209,8 +215,6 @@ class _InsightsScreenState extends State<InsightsScreen> {
         return const Color(0xFFFF9800); // Orange
       case Mood.excited:
         return const Color(0xFFE91E63); // Pink
-      default:
-        return const Color(0xFF9E9E9E); // Grey
     }
   }
 
@@ -357,7 +361,7 @@ class _InsightsScreenState extends State<InsightsScreen> {
             ..._moodStatistics.entries.map((entry) {
               final mood = entry.key;
               final count = entry.value;
-              final percentage = _entries.length > 0 
+              final percentage = _entries.isNotEmpty 
                 ? (count / _entries.length * 100).toStringAsFixed(1)
                 : '0.0';
               
@@ -417,7 +421,7 @@ class _InsightsScreenState extends State<InsightsScreen> {
                   ],
                 ),
               );
-            }).toList(),
+            }),
             
             const SizedBox(height: 24),
             
@@ -433,7 +437,7 @@ class _InsightsScreenState extends State<InsightsScreen> {
             Container(
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
-                color: Theme.of(context).colorScheme.surfaceVariant,
+                color: Theme.of(context).colorScheme.surfaceContainerHighest,
                 borderRadius: BorderRadius.circular(AppConstants.cardRadius),
               ),
               child: Column(

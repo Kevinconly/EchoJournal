@@ -174,12 +174,10 @@ class SimilaritySearchService {
 
     // Calculate weighted score
     double totalScore = 0.0;
-    int totalWeightedWords = 0;
 
     for (final keyword in commonKeywords) {
       final weight = _emotionWeights[keyword] ?? 1.0;
       totalScore += weight;
-      totalWeightedWords++;
     }
 
     // Normalize by the smaller set to avoid bias

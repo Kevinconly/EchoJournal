@@ -1,12 +1,14 @@
-import 'package:isar/isar.dart';
+// Temporary fix: Comment out Isar imports
+// import 'package:isar/isar.dart';
 import '../../domain/entities/journal_entry.dart';
 import '../../domain/entities/mood.dart';
 
-part 'journal_entry_model.g.dart';
+// part 'journal_entry_model.g.dart';
 
-@Collection()
+// @Collection()
 class JournalEntryModel {
-  Id id = Isar.autoIncrement;
+  // Id id = Isar.autoIncrement;
+  late int id;
   
   late String content;
   
@@ -14,7 +16,7 @@ class JournalEntryModel {
   
   late DateTime createdAt;
   
-  @Index()
+  // @Index()
   List<String> tags = [];
   
   JournalEntryModel({
@@ -28,11 +30,11 @@ class JournalEntryModel {
     required this.content,
     required this.mood,
     this.tags = const [],
-  }) : createdAt = DateTime.now();
+  }) : createdAt = DateTime.now(), id = DateTime.now().millisecondsSinceEpoch;
 
   JournalEntryEntity toEntity() {
     return JournalEntryEntity(
-      id: id == Isar.autoIncrement ? null : id,
+      id: id, // id == Isar.autoIncrement ? null : id,
       text: content,
       mood: Mood.fromString(mood),
       timestamp: createdAt,
@@ -45,6 +47,6 @@ class JournalEntryModel {
       mood: entity.mood.label,
       createdAt: entity.timestamp,
       tags: [], // TODO: Add tags to entity when needed
-    )..id = entity.id ?? Isar.autoIncrement;
+    )..id = entity.id ?? DateTime.now().millisecondsSinceEpoch; // ..id = entity.id ?? Isar.autoIncrement;
   }
 }

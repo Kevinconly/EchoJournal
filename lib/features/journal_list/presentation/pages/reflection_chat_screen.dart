@@ -3,7 +3,7 @@ import '../../../journal_entry/domain/entities/journal_entry.dart';
 import '../../../journal_entry/domain/services/reflection_engine.dart';
 import '../../../journal_entry/domain/services/similarity_search_service.dart';
 import '../../../journal_entry/data/repositories/journal_repository_impl.dart';
-import '../../../journal_entry/data/datasources/local/database_service.dart';
+// import '../../../journal_entry/data/datasources/local/database_service.dart';
 
 class ReflectionChatScreen extends StatefulWidget {
   final JournalEntryEntity entry;
@@ -107,26 +107,6 @@ class _ReflectionChatScreenState extends State<ReflectionChatScreen> {
     }
   }
 
-  String _generateContextualResponse() {
-    final mood = widget.entry.mood.label.toLowerCase();
-    final content = widget.entry.text;
-    
-    switch (mood) {
-      case 'happy':
-        return "I can see you're feeling happy! 🌟 What specific moments brought you joy today?";
-      case 'sad':
-        return "I hear you're feeling sad. 💙 It's brave to acknowledge these emotions. What's on your mind?";
-      case 'stressed':
-        return "I sense you're stressed. 🌿 Take a deep breath. What's weighing on you?";
-      case 'calm':
-        return "You're feeling calm - that's wonderful! 🌊 What helped you find this peace?";
-      case 'excited':
-        return "Your excitement is contagious! 🎆 What are you looking forward to?";
-      default:
-        return "Thank you for sharing this moment with me. 🌱 How are you feeling about this entry?";
-    }
-  }
-
   void _sendMessage() {
     final text = _messageController.text.trim();
     if (text.isEmpty) return;
@@ -173,22 +153,6 @@ class _ReflectionChatScreenState extends State<ReflectionChatScreen> {
         _scrollToBottom();
       }
     });
-  }
-
-  String _generateContextualReply(String userMessage) {
-    final lowerMessage = userMessage.toLowerCase();
-    
-    if (lowerMessage.contains('help') || lowerMessage.contains('advice')) {
-      return "I'm here to support you. Remember that you have the strength within to navigate this. What specific aspect would you like to explore?";
-    } else if (lowerMessage.contains('feel') || lowerMessage.contains('feeling')) {
-      return "Your feelings are valid. Acknowledging them is the first step. How does it feel to express this?";
-    } else if (lowerMessage.contains('why') || lowerMessage.contains('reason')) {
-      return "Understanding 'why' is a journey. Sometimes the answer comes through patience. What insights are you discovering?";
-    } else if (lowerMessage.contains('thank') || lowerMessage.contains('thanks')) {
-      return "You're welcome! 🌟 I'm here to help you reflect. What else would you like to explore about this entry?";
-    } else {
-      return "Thank you for sharing that with me. Your willingness to reflect shows great self-awareness. What other thoughts are coming up?";
-    }
   }
 
   void _scrollToBottom() {
@@ -269,21 +233,21 @@ class _ReflectionChatScreenState extends State<ReflectionChatScreen> {
                               ),
                             ],
                           ),
-                        ],
-                      ),
+                        ),
+                      ],
                     ),
                   ),
+                  
+                  // Messages List
+                  Expanded(
+                    child: _buildMessagesList(),
+                  ),
+                  
+                  // Message Input Area
+                  _buildMessageInput(),
                 ],
               ),
-                  
-              // Messages List
-              Expanded(
-                child: _buildMessagesList(),
-              ),
-              
-              // Message Input Area
-              _buildMessageInput(),
-            ],
+            ),
           ),
         ],
       ),
@@ -383,7 +347,12 @@ class _ReflectionChatScreenState extends State<ReflectionChatScreen> {
 
   Widget _buildMessageInput() {
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: EdgeInsets.only(
+        left: 16,
+        right: 16,
+        top: 16,
+        bottom: 16 + MediaQuery.of(context).viewInsets.bottom,
+      ),
       decoration: BoxDecoration(
         color: Theme.of(context).colorScheme.surface,
         border: Border(
@@ -392,62 +361,60 @@ class _ReflectionChatScreenState extends State<ReflectionChatScreen> {
           ),
         ),
       ),
-      child: SafeArea(
-        child: Row(
-          children: [
-            Expanded(
-              child: TextField(
-                controller: _messageController,
-                decoration: InputDecoration(
-                  hintText: _isTyping ? 'AI is thinking...' : 'Share your thoughts...',
-                  border: InputBorder.none,
-                  filled: true,
-                  fillColor: Theme.of(context).colorScheme.surfaceContainerHighest,
-                  contentPadding: const EdgeInsets.symmetric(
-                    horizontal: 16,
-                    vertical: 12,
-                  ),
-                  hintStyle: TextStyle(
-                    color: Theme.of(context).colorScheme.onSurfaceVariant.withValues(alpha: 0.6),
-                  ),
+      child: Row(
+        children: [
+          Expanded(
+            child: TextField(
+              controller: _messageController,
+              decoration: InputDecoration(
+                hintText: _isTyping ? 'AI is thinking...' : 'Share your thoughts...',
+                border: InputBorder.none,
+                filled: true,
+                fillColor: Theme.of(context).colorScheme.surfaceContainerHighest,
+                contentPadding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 12,
                 ),
-                maxLines: null,
-                textInputAction: TextInputAction.send,
-                onSubmitted: (_) => _sendMessage(),
-                enabled: !_isTyping,
-              ),
-            ),
-            const SizedBox(width: 8),
-            AnimatedContainer(
-              duration: const Duration(milliseconds: 200),
-              curve: Curves.easeInOut,
-              child: Container(
-                decoration: BoxDecoration(
-                  color: _isTyping 
-                      ? Theme.of(context).colorScheme.surfaceVariant
-                      : Theme.of(context).colorScheme.primary,
-                  shape: BoxShape.circle,
-                ),
-                child: IconButton(
-                  onPressed: _isTyping ? null : _sendMessage,
-                  icon: _isTyping
-                      ? SizedBox(
-                          width: 20,
-                          height: 20,
-                          child: CircularProgressIndicator(
-                            strokeWidth: 2,
-                            color: Theme.of(context).colorScheme.onSurfaceVariant,
-                          ),
-                        )
-                      : const Icon(Icons.send),
-                  color: _isTyping
-                      ? Theme.of(context).colorScheme.onSurfaceVariant
-                      : Theme.of(context).colorScheme.onPrimary,
+                hintStyle: TextStyle(
+                  color: Theme.of(context).colorScheme.onSurfaceVariant.withValues(alpha: 0.6),
                 ),
               ),
+              maxLines: null,
+              textInputAction: TextInputAction.send,
+              onSubmitted: (_) => _sendMessage(),
+              enabled: !_isTyping,
             ),
-          ],
-        ),
+          ),
+          const SizedBox(width: 8),
+          AnimatedContainer(
+            duration: const Duration(milliseconds: 200),
+            curve: Curves.easeInOut,
+            child: Container(
+              decoration: BoxDecoration(
+                color: _isTyping 
+                    ? Theme.of(context).colorScheme.surfaceContainerHighest
+                    : Theme.of(context).colorScheme.primary,
+                shape: BoxShape.circle,
+              ),
+              child: IconButton(
+                onPressed: _isTyping ? null : _sendMessage,
+                icon: _isTyping
+                    ? SizedBox(
+                        width: 20,
+                        height: 20,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          color: Theme.of(context).colorScheme.onSurfaceVariant,
+                        ),
+                      )
+                    : const Icon(Icons.send),
+                color: _isTyping
+                    ? Theme.of(context).colorScheme.onSurfaceVariant
+                    : Theme.of(context).colorScheme.onPrimary,
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -470,7 +437,6 @@ class _MessageBubble extends StatelessWidget {
   final bool isUser;
 
   const _MessageBubble({
-    super.key,
     required this.message,
     required this.isUser,
   });
@@ -571,7 +537,7 @@ class _TypingIndicator extends StatelessWidget {
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
             decoration: BoxDecoration(
-              color: Theme.of(context).colorScheme.surfaceVariant,
+              color: Theme.of(context).colorScheme.surfaceContainerHighest,
               borderRadius: BorderRadius.circular(20).copyWith(
                 bottomRight: const Radius.circular(4),
               ),

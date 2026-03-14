@@ -1,21 +1,7 @@
 import 'package:flutter/material.dart';
-import 'models/journal_entry.dart';
+import 'models/journal_entry_hive.dart';
+import 'features/journal_entry/domain/entities/mood.dart';
 import 'services/database_service.dart';
-
-enum Mood {
-  happy('😊', 'Happy'),
-  sad('😢', 'Sad'),
-  anxious('😰', 'Anxious'),
-  grateful('🙏', 'Grateful'),
-  excited('🎉', 'Excited'),
-  calm('😌', 'Calm'),
-  angry('😠', 'Angry'),
-  neutral('😐', 'Neutral');
-
-  const Mood(this.emoji, this.label);
-  final String emoji;
-  final String label;
-}
 
 class JournalEntryScreen extends StatefulWidget {
   const JournalEntryScreen({super.key});
@@ -74,7 +60,7 @@ class _JournalEntryScreenState extends State<JournalEntryScreen> {
     });
 
     try {
-      final entry = JournalEntry.create(
+      final entry = JournalEntryHive.create(
         text: _textController.text.trim(),
         mood: _selectedMood!.label,
       );

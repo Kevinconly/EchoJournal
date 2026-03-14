@@ -3,7 +3,6 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../../../journal_entry/domain/services/backup_service.dart';
 import '../../../journal_entry/domain/repositories/journal_repository.dart';
 import '../../../journal_entry/data/repositories/journal_repository_impl.dart';
-import '../../../journal_entry/data/datasources/local/database_service.dart';
 import '../../../../core/constants/app_constants.dart';
 
 class SettingsScreen extends StatefulWidget {
@@ -59,7 +58,14 @@ class _SettingsScreenState extends State<SettingsScreen> {
       });
 
       final filePath = await BackupService.exportBackup();
-      
+      if (filePath == null) {
+        // User canceled the save dialog; treat as no-op.
+        setState(() {
+          _isExporting = false;
+        });
+        return;
+      }
+
       // Save last backup path
       final prefs = await SharedPreferences.getInstance();
       await prefs.setString('last_backup_path', filePath);

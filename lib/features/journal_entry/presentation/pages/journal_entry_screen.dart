@@ -1,15 +1,12 @@
 import 'package:flutter/material.dart';
 import '../../../journal_entry/domain/entities/journal_entry.dart';
 import '../../../journal_entry/domain/entities/mood.dart';
-import '../../../journal_entry/domain/repositories/journal_repository.dart';
 import '../../../journal_entry/data/repositories/journal_repository_impl.dart';
-import '../../../journal_entry/data/datasources/local/database_service.dart';
 import '../../../journal_entry/domain/usecases/save_journal_entry_usecase.dart';
 import '../widgets/journal_text_field.dart';
 import '../widgets/mood_selector.dart';
 import '../widgets/tags_input.dart';
 import '../../../../core/constants/app_constants.dart';
-import '../../../../core/theme/app_theme.dart';
 
 class JournalEntryScreen extends StatefulWidget {
   const JournalEntryScreen({super.key});
@@ -50,12 +47,15 @@ class _JournalEntryScreenState extends State<JournalEntryScreen> {
         text: _textController.text.trim(),
         mood: _selectedMood!,
         timestamp: DateTime.now(),
+        tags: _tags,
       );
 
       await saveUseCase(entry);
       _showSnackBar(AppStrings.entrySaved);
       _clearForm();
-      Navigator.of(context).pop();
+      if (mounted) {
+        Navigator.of(context).pop();
+      }
     } catch (e) {
       _showSnackBar('${AppStrings.failedToSave}: $e');
     } finally {
