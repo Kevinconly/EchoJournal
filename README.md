@@ -4,11 +4,11 @@ EchoJournal is an **offline-first journaling mobile app** that turns personal th
 
 ## ✨ Features
 
-* 📝 Private journal entries with mood tracking
+* 📝 Private journal entries with mood tracking and tags
 * 🤖 AI-powered reflection chat (completely offline)
 * 📊 Mood insights with pie charts and statistics
 * 🔍 Real-time search with text highlighting
-* 💾 Local backup/restore functionality (JSON)
+* 💾 Local backup/restore functionality (JSON) - cross-platform reliable
 * ⚙️ Settings with dark mode toggle
 * 🎨 Beautiful Material 3 design
 * 📱 Cross-platform support (iOS, Android, Web, Desktop)
@@ -17,7 +17,7 @@ EchoJournal is an **offline-first journaling mobile app** that turns personal th
 ## 🛠 Tech Stack
 
 * **Flutter** with Material 3 UI
-* **Isar Database** for local storage
+* **Hive Database** for local storage (switched from Isar due to build compatibility)
 * **FL Chart** for mood visualizations
 * **File Picker** for backup/restore
 * **Shared Preferences** for settings
@@ -33,12 +33,22 @@ EchoJournal is an **offline-first journaling mobile app** that turns personal th
 
 ## 🚀 Current Status
 
-**Version:** 1.0.1 (Released)
+**Version:** 1.0.2 (Latest)
 **Status:** Production Ready ✅
-**Code Quality:** 27 analyzer issues (86% improvement from 195 → 27)
-**Last Update:** March 14, 2026 - v1.0.1 final fixes and all tests passing
+**Code Quality:** Clean analysis with no warnings/errors
+**Last Update:** March 14, 2026 - Database migration and backup fixes
 
-### 🔧 v1.0.1 Final Improvements
+### 🔧 v1.0.2 Database & Backup Improvements
+- ✅ **Switched to Hive Database**: Replaced Isar with Hive for better build compatibility and reliability
+- ✅ **Enhanced Backup/Export**: Cross-platform export with proper cancellation handling and fallback to app documents
+- ✅ **Fixed Import Functionality**: Reliable JSON import with error handling and duplicate prevention
+- ✅ **Added Tags Support**: Journal entries now support tags for better organization
+- ✅ **Improved Data Persistence**: Fixed entry count sync and real-time updates without app restart
+- ✅ **Code Cleanup**: Removed unused Isar code, fixed analyzer warnings, and optimized imports
+- ✅ **All tests passing**: Unit tests, widget tests, and integration verified
+- ✅ **Production-ready**: No runtime errors, stable backup/import across all platforms
+
+### 🔧 v1.0.1 Final Improvements (Previous)
 - ✅ MASSIVE 86% code quality improvement (195 → 27 issues)
 - ✅ Resolved major structural issues in insights_screen.dart
 - ✅ Fixed PieChartSectionData compatibility with fl_chart
@@ -71,8 +81,8 @@ EchoJournal aims to make journaling more engaging by allowing users to **chat wi
 * Optional cloud sync
 * Advanced AI insights
 * Cross-device journaling
-* Emotional trend analysis
-* Production deployment - Released v1.0.1 with 68% code quality improvement
+* Emotional trend analysis with enhanced tag analytics
+* Mobile app store deployment (iOS/Android)
 
 ---
 
