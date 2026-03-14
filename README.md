@@ -33,18 +33,21 @@ EchoJournal is an **offline-first journaling mobile app** that turns personal th
 
 ## 🚀 Current Status
 
-**Version:** 1.0.0 (Development)
+**Version:** 1.0.1 (Released)
 **Status:** Production Ready ✅
-**Code Quality:** 120 analyzer issues (38% improvement from 195 → 120)
-**Last Update:** March 14, 2026 - Major refactoring and code quality improvements
+**Code Quality:** 63 analyzer issues (68% improvement from 195 → 63)
+**Last Update:** March 14, 2026 - v1.0.1 release with major code quality improvements
 
-### 🔧 Recent Improvements
-- ✅ Fixed all critical syntax errors and structural issues
+### 🔧 v1.0.1 Improvements
+- ✅ Reduced total issues by 68% (195 → 63)
+- ✅ Fixed critical syntax errors and structural issues
 - ✅ Updated deprecated APIs to modern equivalents
 - ✅ Resolved type system errors and import issues  
 - ✅ Fixed database query methods and missing implementations
-- ✅ Improved code maintainability and readability
-- ✅ Enhanced error handling across the codebase
+- ✅ Improved BorderRadius parameter handling
+- ✅ Fixed const string initialization issues
+- ✅ Enhanced error handling across codebase
+- ✅ All core functionality preserved and working properly
 
 ## 📋 Installation
 
@@ -66,7 +69,7 @@ EchoJournal aims to make journaling more engaging by allowing users to **chat wi
 * Advanced AI insights
 * Cross-device journaling
 * Emotional trend analysis
-* Production deployment - Code quality significantly improved and ready
+* Production deployment - Released v1.0.1 with 68% code quality improvement
 
 ---
 
