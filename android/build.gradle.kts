@@ -19,6 +19,20 @@ subprojects {
     project.evaluationDependsOn(":app")
 }
 
+// Flutter plugins that still declare an older compileSdk cannot satisfy the
+// minCompileSdk of newer plugin AARs under AGP 9. Align them with the app's SDK.
+fun alignPluginCompileSdk(target: Project) {
+    target.extensions.findByType(com.android.build.api.dsl.LibraryExtension::class.java)
+        ?.compileSdk = 36
+}
+subprojects {
+    if (state.executed) {
+        alignPluginCompileSdk(this)
+    } else {
+        afterEvaluate { alignPluginCompileSdk(this) }
+    }
+}
+
 tasks.register<Delete>("clean") {
     delete(rootProject.layout.buildDirectory)
 }

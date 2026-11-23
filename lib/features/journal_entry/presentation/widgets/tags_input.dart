@@ -1,9 +1,9 @@
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import '../../../../core/constants/app_constants.dart';
 
 class TagsInput extends StatefulWidget {
   final List<String> tags;
-  final Function(List<String>) onTagsChanged;
+  final ValueChanged<List<String>> onTagsChanged;
 
   const TagsInput({
     super.key,
@@ -18,16 +18,25 @@ class TagsInput extends StatefulWidget {
 class _TagsInputState extends State<TagsInput> {
   final _tagController = TextEditingController();
 
+  static const List<String> _suggestions = [
+    'gratitude',
+    'reflection',
+    'work',
+    'family',
+    'health',
+    'mindfulness',
+  ];
+
   @override
   void dispose() {
     _tagController.dispose();
     super.dispose();
   }
 
-  void _addTag() {
-    final tag = _tagController.text.trim();
-    if (tag.isNotEmpty && !widget.tags.contains(tag)) {
-      final newTags = [...widget.tags, tag];
+  void _addTag([String? customTag]) {
+    final raw = (customTag ?? _tagController.text).trim().replaceAll('#', '');
+    if (raw.isNotEmpty && !widget.tags.contains(raw)) {
+      final newTags = [...widget.tags, raw];
       widget.onTagsChanged(newTags);
       _tagController.clear();
     }
@@ -40,69 +49,131 @@ class _TagsInputState extends State<TagsInput> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final availableSuggestions = _suggestions.where((s) => !widget.tags.contains(s)).take(4).toList();
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          'Tags (Optional)',
-          style: Theme.of(context).textTheme.titleMedium,
-        ),
-        const SizedBox(height: 8),
-        
-        // Tags display
-        if (widget.tags.isNotEmpty) ...[
-          Wrap(
-            spacing: 8,
-            runSpacing: 4,
-            children: widget.tags.map((tag) {
-              return Chip(
-                label: Text(tag),
-                onDeleted: () => _removeTag(tag),
-                backgroundColor: Theme.of(context).colorScheme.primaryContainer,
-                deleteIcon: Icon(
-                  Icons.close,
-                  size: 18,
-                  color: Theme.of(context).colorScheme.onPrimaryContainer,
-                ),
-                labelStyle: TextStyle(
-                  color: Theme.of(context).colorScheme.onPrimaryContainer,
-                ),
-              );
-            }).toList(),
-          ),
-          const SizedBox(height: 12),
-        ],
-        
-        // Tag input
         Row(
           children: [
-            Expanded(
-              child: TextField(
-                controller: _tagController,
-                decoration: InputDecoration(
-                  hintText: 'Add a tag...',
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(AppConstants.cardRadius),
-                  ),
-                  contentPadding: const EdgeInsets.symmetric(
-                    horizontal: 16,
-                    vertical: 12,
-                  ),
-                ),
-                onSubmitted: (_) => _addTag(),
+            Text(
+              'Tags',
+              style: theme.textTheme.titleSmall?.copyWith(
+                fontWeight: FontWeight.w600,
               ),
             ),
-            const SizedBox(width: 8),
-            IconButton.filled(
-              onPressed: _addTag,
-              icon: const Icon(Icons.add),
-              style: IconButton.styleFrom(
-                backgroundColor: Theme.of(context).colorScheme.primary,
-                foregroundColor: Theme.of(context).colorScheme.onPrimary,
+            const SizedBox(width: 6),
+            Text(
+              '(Optional)',
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: theme.colorScheme.onSurfaceVariant,
               ),
             ),
           ],
         ),
+        const SizedBox(height: 8),
+
+        // Active tags display
+        if (widget.tags.isNotEmpty) ...[
+          Wrap(
+            spacing: 6,
+            runSpacing: 6,
+            children: widget.tags.map((tag) {
+              return InputChip(
+                label: Text('#$tag'),
+                onDeleted: () => _removeTag(tag),
+                backgroundColor: theme.colorScheme.surfaceContainerHighest,
+                deleteIconColor: theme.colorScheme.onSurfaceVariant,
+                labelStyle: TextStyle(
+                  color: theme.colorScheme.onSurface,
+                  fontSize: 12,
+                  fontWeight: FontWeight.w500,
+                ),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8),
+                  side: BorderSide(color: theme.colorScheme.outlineVariant),
+                ),
+              );
+            }).toList(),
+          ),
+          const SizedBox(height: 8),
+        ],
+
+        // Tag input row
+        Row(
+          children: [
+            Expanded(
+              child: SizedBox(
+                height: 44,
+                child: TextField(
+                  controller: _tagController,
+                  decoration: InputDecoration(
+                    hintText: 'Add a tag (e.g. gratitude, ideas)...',
+                    hintStyle: TextStyle(
+                      fontSize: 13,
+                      color: theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.6),
+                    ),
+                    contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                    prefixText: '#',
+                    prefixStyle: TextStyle(
+                      color: theme.colorScheme.primary,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  onSubmitted: (_) => _addTag(),
+                ),
+              ),
+            ),
+            const SizedBox(width: 8),
+            IconButton.filled(
+              onPressed: () => _addTag(),
+              icon: const Icon(Icons.add, size: 20),
+              style: IconButton.styleFrom(
+                backgroundColor: theme.colorScheme.primary,
+                foregroundColor: theme.colorScheme.onPrimary,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(AppConstants.buttonRadius),
+                ),
+              ),
+            ),
+          ],
+        ),
+
+        // Suggested prompts
+        if (widget.tags.length < 3 && availableSuggestions.isNotEmpty) ...[
+          const SizedBox(height: 8),
+          SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            child: Row(
+              children: [
+                Text(
+                  'Suggestions: ',
+                  style: theme.textTheme.labelSmall?.copyWith(
+                    color: theme.colorScheme.onSurfaceVariant,
+                  ),
+                ),
+                ...availableSuggestions.map((sug) {
+                  return Padding(
+                    padding: const EdgeInsets.only(right: 6),
+                    child: ActionChip(
+                      label: Text('+$sug'),
+                      onPressed: () => _addTag(sug),
+                      padding: EdgeInsets.zero,
+                      labelStyle: TextStyle(
+                        fontSize: 11,
+                        color: theme.colorScheme.primary,
+                        fontWeight: FontWeight.w500,
+                      ),
+                      backgroundColor: theme.colorScheme.surfaceContainerLowest,
+                      side: BorderSide(color: theme.colorScheme.outlineVariant),
+                    ),
+                  );
+                }),
+              ],
+            ),
+          ),
+        ],
       ],
     );
   }

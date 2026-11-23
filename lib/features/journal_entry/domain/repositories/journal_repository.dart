@@ -4,6 +4,7 @@ import '../entities/mood.dart';
 abstract class JournalRepository {
   Future<void> saveEntry(JournalEntryEntity entry);
   Future<List<JournalEntryEntity>> getAllEntries();
+  Future<JournalEntryEntity?> getEntryById(int id);
   Future<List<JournalEntryEntity>> getEntriesByMood(Mood mood);
   Future<List<JournalEntryEntity>> getEntriesByDateRange(
     DateTime startDate,

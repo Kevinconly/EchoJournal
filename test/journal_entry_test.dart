@@ -1,6 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:reflectly_ai/features/journal_entry/domain/entities/journal_entry.dart';
-import 'package:reflectly_ai/features/journal_entry/domain/entities/mood.dart';
+import 'package:echo_journal/features/journal_entry/domain/entities/journal_entry.dart';
+import 'package:echo_journal/features/journal_entry/domain/entities/mood.dart';
 
 void main() {
   group('JournalEntry Tests', () {

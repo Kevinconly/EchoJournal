@@ -1,7 +1,6 @@
 import '../../domain/entities/journal_entry.dart';
 import '../../domain/entities/mood.dart';
 import '../../domain/repositories/journal_repository.dart';
-// import '../datasources/local/database_service.dart'; // Commented out - using main service
 import '../../../../services/database_service.dart';
 import '../../../../models/journal_entry_hive.dart';
 
@@ -10,7 +9,6 @@ class JournalRepositoryImpl implements JournalRepository {
 
   @override
   Future<void> saveEntry(JournalEntryEntity entry) async {
-    // Convert entity to Hive model
     final hiveModel = JournalEntryHive(
       id: entry.id ?? 0,
       text: entry.text,
@@ -31,6 +29,19 @@ class JournalRepositoryImpl implements JournalRepository {
       timestamp: model.timestamp,
       tags: model.tags,
     )).toList();
+  }
+
+  @override
+  Future<JournalEntryEntity?> getEntryById(int id) async {
+    final model = await DatabaseService.getEntryById(id);
+    if (model == null) return null;
+    return JournalEntryEntity(
+      id: model.id,
+      text: model.text,
+      mood: Mood.fromString(model.mood),
+      timestamp: model.timestamp,
+      tags: model.tags,
+    );
   }
 
   @override

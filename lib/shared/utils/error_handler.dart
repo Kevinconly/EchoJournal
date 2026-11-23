@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 
 class AppErrorHandler {
   static void showSnackBar(BuildContext context, String message, {bool isError = true}) {

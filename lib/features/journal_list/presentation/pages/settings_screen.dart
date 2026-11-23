@@ -1,9 +1,9 @@
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import '../../../journal_entry/domain/services/backup_service.dart';
-import '../../../journal_entry/domain/repositories/journal_repository.dart';
-import '../../../journal_entry/data/repositories/journal_repository_impl.dart';
 import '../../../../core/constants/app_constants.dart';
+import '../../../../core/di/service_locator.dart';
+import '../../../../core/theme/theme_controller.dart';
+import '../../../journal_entry/domain/services/backup_service.dart';
 
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
@@ -13,8 +13,6 @@ class SettingsScreen extends StatefulWidget {
 }
 
 class _SettingsScreenState extends State<SettingsScreen> {
-  late JournalRepository _repository;
-  bool _isDarkMode = false;
   bool _isExporting = false;
   bool _isImporting = false;
   bool _isClearing = false;
@@ -23,85 +21,80 @@ class _SettingsScreenState extends State<SettingsScreen> {
   @override
   void initState() {
     super.initState();
-    _repository = JournalRepositoryImpl();
     _loadSettings();
   }
 
   Future<void> _loadSettings() async {
     try {
       final prefs = await SharedPreferences.getInstance();
-      setState(() {
-        _isDarkMode = prefs.getBool('dark_mode') ?? false;
-        _lastBackupPath = prefs.getString('last_backup_path');
-      });
+      if (mounted) {
+        setState(() {
+          _lastBackupPath = prefs.getString('last_backup_path');
+        });
+      }
     } catch (e) {
       debugPrint('Error loading settings: $e');
     }
   }
 
-  Future<void> _saveDarkMode(bool isDark) async {
-    try {
-      final prefs = await SharedPreferences.getInstance();
-      await prefs.setBool('dark_mode', isDark);
-      setState(() {
-        _isDarkMode = isDark;
-      });
-    } catch (e) {
-      _showErrorSnackBar('Failed to save theme preference');
-    }
-  }
-
   Future<void> _exportBackup() async {
-    try {
-      setState(() {
-        _isExporting = true;
-      });
+    setState(() {
+      _isExporting = true;
+    });
 
+    try {
       final filePath = await BackupService.exportBackup();
       if (filePath == null) {
-        // User canceled the save dialog; treat as no-op.
-        setState(() {
-          _isExporting = false;
-        });
+        // User canceled file picker
+        if (mounted) {
+          setState(() {
+            _isExporting = false;
+          });
+        }
         return;
       }
 
-      // Save last backup path
       final prefs = await SharedPreferences.getInstance();
       await prefs.setString('last_backup_path', filePath);
-      
-      setState(() {
-        _isExporting = false;
-        _lastBackupPath = filePath;
-      });
 
       if (mounted) {
-        _showSuccessSnackBar('Backup exported successfully!\nSaved to: ${filePath.split('/').last}');
+        setState(() {
+          _isExporting = false;
+          _lastBackupPath = filePath;
+        });
+        _showSuccessSnackBar('Backup exported successfully!\nFile: ${BackupService.getFileName(filePath)}');
       }
     } catch (e) {
-      setState(() {
-        _isExporting = false;
-      });
-
       if (mounted) {
+        setState(() {
+          _isExporting = false;
+        });
         _showErrorSnackBar('Export failed: $e');
       }
     }
   }
 
   Future<void> _importBackup() async {
-    try {
-      setState(() {
-        _isImporting = true;
-      });
+    final mode = await _showImportModeDialog();
+    if (mode == null) return; // User canceled mode selection
 
-      final result = await BackupService.importBackup();
-      
-      setState(() {
-        _isImporting = false;
-      });
+    setState(() {
+      _isImporting = true;
+    });
+
+    try {
+      final result = await BackupService.importBackup(mode: mode);
 
       if (mounted) {
+        setState(() {
+          _isImporting = false;
+        });
+
+        if (result.isCancelled) {
+          // Clean cancellation, no error shown
+          return;
+        }
+
         if (result.success) {
           _showImportSuccessDialog(result);
         } else {
@@ -109,69 +102,61 @@ class _SettingsScreenState extends State<SettingsScreen> {
         }
       }
     } catch (e) {
-      setState(() {
-        _isImporting = false;
-      });
-
       if (mounted) {
+        setState(() {
+          _isImporting = false;
+        });
         _showErrorSnackBar('Import failed: $e');
       }
     }
   }
 
-  Future<void> _clearAllEntries() async {
-    final confirmed = await _showClearConfirmationDialog();
-    if (!confirmed) return;
-
-    try {
-      setState(() {
-        _isClearing = true;
-      });
-
-      await _repository.deleteAllEntries();
-      
-      // Clear last backup path
-      final prefs = await SharedPreferences.getInstance();
-      await prefs.remove('last_backup_path');
-      
-      setState(() {
-        _isClearing = false;
-        _lastBackupPath = null;
-      });
-
-      if (mounted) {
-        _showSuccessSnackBar('All entries cleared successfully');
-      }
-    } catch (e) {
-      setState(() {
-        _isClearing = false;
-      });
-
-      if (mounted) {
-        _showErrorSnackBar('Failed to clear entries: $e');
-      }
-    }
-  }
-
-  Future<bool> _showClearConfirmationDialog() async {
-    return await showDialog<bool>(
+  Future<ImportMode?> _showImportModeDialog() async {
+    return showDialog<ImportMode>(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Clear All Entries'),
+        title: const Text('Import Backup'),
         content: const Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('Are you sure you want to delete all journal entries?'),
-            SizedBox(height: 8),
+            Text('How would you like to restore your entries?'),
+            SizedBox(height: 12),
             Text(
-              'This action cannot be undone.',
-              style: TextStyle(
-                color: Colors.red,
-                fontWeight: FontWeight.w500,
-              ),
+              '• Merge: Adds new entries and skips duplicates safely.\n'
+              '• Replace: Replaces all existing entries with backup contents.',
+              style: TextStyle(fontSize: 13, height: 1.4),
             ),
           ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(null),
+            child: const Text('Cancel'),
+          ),
+          OutlinedButton(
+            onPressed: () => Navigator.of(context).pop(ImportMode.replace),
+            style: OutlinedButton.styleFrom(
+              foregroundColor: Theme.of(context).colorScheme.error,
+            ),
+            child: const Text('Replace All'),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.of(context).pop(ImportMode.merge),
+            child: const Text('Merge (Safe)'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _clearAllEntries() async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Clear All Entries'),
+        content: const Text(
+          'Are you sure you want to delete all journal entries? This action cannot be undone.',
         ),
         actions: [
           TextButton(
@@ -187,7 +172,34 @@ class _SettingsScreenState extends State<SettingsScreen> {
           ),
         ],
       ),
-    ) ?? false;
+    );
+
+    if (confirmed != true) return;
+
+    setState(() {
+      _isClearing = true;
+    });
+
+    try {
+      await ServiceLocator.journalRepository.deleteAllEntries();
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.remove('last_backup_path');
+
+      if (mounted) {
+        setState(() {
+          _isClearing = false;
+          _lastBackupPath = null;
+        });
+        _showSuccessSnackBar('All entries cleared successfully');
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _isClearing = false;
+        });
+        _showErrorSnackBar('Failed to clear entries: $e');
+      }
+    }
   }
 
   void _showImportSuccessDialog(ImportResult result) {
@@ -199,17 +211,21 @@ class _SettingsScreenState extends State<SettingsScreen> {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('Successfully imported ${result.importedCount} of ${result.totalEntries} entries.'),
+            Text('Successfully imported ${result.importedCount} entries.'),
+            if (result.skippedDuplicates > 0) ...[
+              const SizedBox(height: 6),
+              Text(
+                'Skipped ${result.skippedDuplicates} duplicate entries.',
+                style: TextStyle(
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                ),
+              ),
+            ],
             if (result.hasErrors) ...[
-              const SizedBox(height: 16),
-              const Text('Some entries had errors:', style: TextStyle(fontWeight: FontWeight.bold)),
-              const SizedBox(height: 8),
-              ...result.errors!.take(5).map((error) => Text(
-                '• $error',
-                style: const TextStyle(fontSize: 12, color: Colors.red),
-              )),
-              if (result.errors!.length > 5)
-                Text('... and ${result.errors!.length - 5} more errors'),
+              const SizedBox(height: 12),
+              const Text('Errors encountered:', style: TextStyle(fontWeight: FontWeight.bold)),
+              const SizedBox(height: 6),
+              ...result.errors.take(3).map((err) => Text('• $err', style: const TextStyle(fontSize: 12, color: Colors.red))),
             ],
           ],
         ),
@@ -228,7 +244,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
       SnackBar(
         content: Text(message),
         backgroundColor: Theme.of(context).colorScheme.primary,
-        duration: const Duration(seconds: 3),
+        duration: const Duration(seconds: 4),
       ),
     );
   }
@@ -238,7 +254,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
       SnackBar(
         content: Text(message),
         backgroundColor: Theme.of(context).colorScheme.error,
-        duration: const Duration(seconds: 3),
+        duration: const Duration(seconds: 4),
       ),
     );
   }
@@ -257,16 +273,21 @@ class _SettingsScreenState extends State<SettingsScreen> {
         children: [
           // Appearance Section
           _buildSectionHeader('Appearance'),
-          _buildDarkModeTile(),
+          _buildThemeSelector(),
           const SizedBox(height: 24),
-          
+
           // Data Management Section
           _buildSectionHeader('Data Management'),
           _buildExportTile(),
           _buildImportTile(),
           _buildClearTile(),
           const SizedBox(height: 24),
-          
+
+          // Privacy & Storage Section
+          _buildSectionHeader('Privacy & Storage'),
+          _buildPrivacyTile(),
+          const SizedBox(height: 24),
+
           // About Section
           _buildSectionHeader('About'),
           _buildAboutTile(),
@@ -278,129 +299,161 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
   Widget _buildSectionHeader(String title) {
     return Padding(
-      padding: const EdgeInsets.only(bottom: 16),
+      padding: const EdgeInsets.only(bottom: 12),
       child: Text(
         title,
-        style: Theme.of(context).textTheme.titleLarge?.copyWith(
+        style: Theme.of(context).textTheme.titleMedium?.copyWith(
           fontWeight: FontWeight.w600,
+          color: Theme.of(context).colorScheme.primary,
         ),
       ),
     );
   }
 
-  Widget _buildDarkModeTile() {
-    return ListTile(
-      leading: Icon(
-        _isDarkMode ? Icons.dark_mode : Icons.light_mode,
-        color: Theme.of(context).colorScheme.primary,
-      ),
-      title: const Text('Dark Mode'),
-      subtitle: Text(_isDarkMode ? 'Currently enabled' : 'Currently disabled'),
-      trailing: Switch(
-        value: _isDarkMode,
-        onChanged: _saveDarkMode,
-        activeThumbColor: Theme.of(context).colorScheme.primary,
-      ),
-      contentPadding: const EdgeInsets.symmetric(horizontal: 0, vertical: 4),
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(AppConstants.cardRadius),
-      ),
+  Widget _buildThemeSelector() {
+    return ValueListenableBuilder<ThemeMode>(
+      valueListenable: ThemeController.themeModeNotifier,
+      builder: (context, currentMode, _) {
+        return Card(
+          elevation: 0,
+          color: Theme.of(context).colorScheme.surfaceContainerHighest,
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Icon(
+                      currentMode == ThemeMode.dark ? Icons.dark_mode : Icons.light_mode,
+                      color: Theme.of(context).colorScheme.primary,
+                    ),
+                    const SizedBox(width: 12),
+                    Text(
+                      'Theme Mode',
+                      style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 12),
+                SegmentedButton<ThemeMode>(
+                  segments: const [
+                    ButtonSegment(
+                      value: ThemeMode.system,
+                      label: Text('System'),
+                      icon: Icon(Icons.brightness_auto, size: 18),
+                    ),
+                    ButtonSegment(
+                      value: ThemeMode.light,
+                      label: Text('Light'),
+                      icon: Icon(Icons.light_mode, size: 18),
+                    ),
+                    ButtonSegment(
+                      value: ThemeMode.dark,
+                      label: Text('Dark'),
+                      icon: Icon(Icons.dark_mode, size: 18),
+                    ),
+                  ],
+                  selected: {currentMode},
+                  onSelectionChanged: (selected) {
+                    if (selected.isNotEmpty) {
+                      ThemeController.setThemeMode(selected.first);
+                    }
+                  },
+                ),
+              ],
+            ),
+          ),
+        );
+      },
     );
   }
 
   Widget _buildExportTile() {
     return ListTile(
-      leading: const Icon(Icons.download),
+      leading: Icon(
+        Icons.download_outlined,
+        color: Theme.of(context).colorScheme.primary,
+      ),
       title: const Text('Export Backup'),
-      subtitle: _lastBackupPath != null 
-          ? Text('Last: ${_lastBackupPath!.split('/').last}')
-          : const Text('Export all entries to JSON file'),
+      subtitle: Text(
+        _lastBackupPath != null
+            ? 'Last backup: ${BackupService.getFileName(_lastBackupPath!)}'
+            : 'Save your entries to a JSON backup file',
+      ),
       trailing: _isExporting
           ? const SizedBox(
               width: 20,
               height: 20,
               child: CircularProgressIndicator(strokeWidth: 2),
             )
-          : null,
+          : const Icon(Icons.chevron_right),
       onTap: _isExporting ? null : _exportBackup,
-      contentPadding: const EdgeInsets.symmetric(horizontal: 0, vertical: 4),
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(AppConstants.cardRadius),
-      ),
     );
   }
 
   Widget _buildImportTile() {
     return ListTile(
-      leading: const Icon(Icons.upload),
+      leading: Icon(
+        Icons.upload_outlined,
+        color: Theme.of(context).colorScheme.primary,
+      ),
       title: const Text('Import Backup'),
-      subtitle: const Text('Import entries from JSON file'),
+      subtitle: const Text('Restore or merge entries from a JSON backup'),
       trailing: _isImporting
           ? const SizedBox(
               width: 20,
               height: 20,
               child: CircularProgressIndicator(strokeWidth: 2),
             )
-          : null,
+          : const Icon(Icons.chevron_right),
       onTap: _isImporting ? null : _importBackup,
-      contentPadding: const EdgeInsets.symmetric(horizontal: 0, vertical: 4),
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(AppConstants.cardRadius),
-      ),
     );
   }
 
   Widget _buildClearTile() {
     return ListTile(
       leading: Icon(
-        Icons.delete_forever,
+        Icons.delete_sweep_outlined,
         color: Theme.of(context).colorScheme.error,
       ),
-      title: const Text('Clear All Entries'),
-      subtitle: const Text('Delete all journal entries permanently'),
+      title: Text(
+        'Clear All Entries',
+        style: TextStyle(color: Theme.of(context).colorScheme.error),
+      ),
+      subtitle: const Text('Permanently delete all journal entries'),
       trailing: _isClearing
           ? const SizedBox(
               width: 20,
               height: 20,
-              child: CircularProgressIndicator(
-                strokeWidth: 2,
-                valueColor: AlwaysStoppedAnimation<Color>(Colors.red),
-              ),
+              child: CircularProgressIndicator(strokeWidth: 2),
             )
-          : null,
+          : const Icon(Icons.chevron_right),
       onTap: _isClearing ? null : _clearAllEntries,
-      contentPadding: const EdgeInsets.symmetric(horizontal: 0, vertical: 4),
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(AppConstants.cardRadius),
+    );
+  }
+
+  Widget _buildPrivacyTile() {
+    return ListTile(
+      leading: Icon(
+        Icons.security_outlined,
+        color: Theme.of(context).colorScheme.primary,
       ),
+      title: const Text('100% Offline Storage'),
+      subtitle: const Text('Your entries never leave your device. No cloud sync, no tracking.'),
     );
   }
 
   Widget _buildAboutTile() {
     return ListTile(
-      leading: const Icon(Icons.info_outline),
-      title: const Text('About EchoJournal'),
-      subtitle: const Text('Version 1.0.0'),
-      trailing: const Icon(Icons.chevron_right),
-      onTap: () {
-        showAboutDialog(
-          context: context,
-          applicationName: AppConstants.appName,
-          applicationVersion: '1.0.0',
-          applicationIcon: const Icon(Icons.book),
-          children: [
-            const Text('A private, offline-first journaling app'),
-            const SizedBox(height: 16),
-            const Text('Built with Flutter and Material Design'),
-            const SizedBox(height: 16),
-            const Text('© 2024 EchoJournal'),
-          ],
-        );
-      },
-      contentPadding: const EdgeInsets.symmetric(horizontal: 0, vertical: 4),
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(AppConstants.cardRadius),
+      leading: Icon(
+        Icons.info_outline,
+        color: Theme.of(context).colorScheme.primary,
       ),
+      title: const Text('EchoJournal'),
+      subtitle: const Text('Version 1.0.3 • Thoughtful offline journaling'),
     );
   }
 }

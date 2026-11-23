@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 
 class AnimatedFAB extends StatefulWidget {
   final VoidCallback onPressed;
@@ -17,33 +17,25 @@ class AnimatedFAB extends StatefulWidget {
 }
 
 class _AnimatedFABState extends State<AnimatedFAB>
-  with SingleTickerProviderStateMixin {
-  late AnimationController _animationController;
-  late Animation<double> _scaleAnimation;
-  late Animation<double> _rotationAnimation;
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _animationController;
+  late final Animation<double> _scaleAnimation;
 
   @override
   void initState() {
     super.initState();
     _animationController = AnimationController(
-      duration: const Duration(milliseconds: 200),
+      duration: const Duration(milliseconds: 150),
       vsync: this,
     );
-    
+
     _scaleAnimation = Tween<double>(
       begin: 1.0,
-      end: 1.1,
+      end: 1.08,
     ).animate(CurvedAnimation(
       parent: _animationController,
-      curve: Curves.elasticOut,
-    ));
-
-    _rotationAnimation = Tween<double>(
-      begin: 0.0,
-      end: 0.1,
-    ).animate(CurvedAnimation(
-      parent: _animationController,
-      curve: Curves.easeInOut,
+      curve: Curves.easeOutCubic,
+      reverseCurve: Curves.easeInCubic,
     ));
   }
 
@@ -53,41 +45,30 @@ class _AnimatedFABState extends State<AnimatedFAB>
     super.dispose();
   }
 
-  void _animate() {
+  void _handlePress() {
     _animationController.forward().then((_) {
-      _animationController.reverse();
+      if (mounted) {
+        _animationController.reverse();
+      }
     });
+    widget.onPressed();
   }
 
   @override
   Widget build(BuildContext context) {
-    return AnimatedBuilder(
-      animation: _animationController,
-      builder: (context, child) {
-        return Transform.scale(
-          scale: _scaleAnimation.value,
-          child: Transform.rotate(
-            angle: _rotationAnimation.value,
-            child: ScaleTransition(
-              scale: _scaleAnimation,
-              child: FloatingActionButton(
-                onPressed: () {
-                  _animate();
-                  widget.onPressed();
-                },
-                tooltip: widget.tooltip,
-                elevation: 8,
-                backgroundColor: Theme.of(context).colorScheme.primary,
-                foregroundColor: Theme.of(context).colorScheme.onPrimary,
-                child: Icon(
-                  widget.icon,
-                  size: 24,
-                ),
-              ),
-            ),
-          ),
-        );
-      },
+    return ScaleTransition(
+      scale: _scaleAnimation,
+      child: FloatingActionButton(
+        onPressed: _handlePress,
+        tooltip: widget.tooltip,
+        elevation: 3,
+        backgroundColor: Theme.of(context).colorScheme.primary,
+        foregroundColor: Theme.of(context).colorScheme.onPrimary,
+        child: Icon(
+          widget.icon,
+          size: 24,
+        ),
+      ),
     );
   }
 }

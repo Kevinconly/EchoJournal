@@ -2,19 +2,96 @@ import 'dart:convert';
 import 'dart:io';
 import 'package:file_picker/file_picker.dart';
 import 'package:path_provider/path_provider.dart';
+import '../../../../core/di/service_locator.dart';
 import '../entities/journal_entry.dart';
 import '../entities/mood.dart';
-import '../../data/repositories/journal_repository_impl.dart';
+import '../repositories/journal_repository.dart';
+
+enum ImportMode {
+  merge,
+  replace,
+}
+
+class ValidationResult {
+  final bool isValid;
+  final String? error;
+  final List<JournalEntryEntity> validatedEntries;
+
+  const ValidationResult({
+    required this.isValid,
+    this.error,
+    this.validatedEntries = const [],
+  });
+
+  factory ValidationResult.success(List<JournalEntryEntity> entries) {
+    return ValidationResult(isValid: true, validatedEntries: entries);
+  }
+
+  factory ValidationResult.failure(String error) {
+    return ValidationResult(isValid: false, error: error);
+  }
+}
+
+class ImportResult {
+  final bool success;
+  final bool isCancelled;
+  final String? error;
+  final int importedCount;
+  final int skippedDuplicates;
+  final int totalEntries;
+  final List<String> errors;
+
+  const ImportResult({
+    required this.success,
+    this.isCancelled = false,
+    this.error,
+    required this.importedCount,
+    this.skippedDuplicates = 0,
+    this.totalEntries = 0,
+    this.errors = const [],
+  });
+
+  factory ImportResult.cancelled() {
+    return const ImportResult(
+      success: false,
+      isCancelled: true,
+      importedCount: 0,
+    );
+  }
+
+  factory ImportResult.failure(String error) {
+    return ImportResult(
+      success: false,
+      error: error,
+      importedCount: 0,
+    );
+  }
+
+  bool get hasErrors => errors.isNotEmpty;
+}
 
 class BackupService {
-  static JournalRepositoryImpl get _repository => 
-      JournalRepositoryImpl();
+  static const String currentVersion = '1.1';
+  static const Set<String> supportedVersions = {'1.0', '1.1'};
 
-  /// Export all journal entries to JSON
+  static JournalRepository get _repository => ServiceLocator.journalRepository;
+
+  /// Generate a deduplication signature from entry content and timestamp
+  static String generateSignature(DateTime timestamp, String text) {
+    return '${timestamp.millisecondsSinceEpoch}_${text.trim().toLowerCase()}';
+  }
+
+  /// Extracts the base file name from a path on either Windows or POSIX systems
+  static String getFileName(String path) {
+    final sanitized = path.replaceAll('\\', '/');
+    return sanitized.split('/').last;
+  }
+
+  /// Export all journal entries to a formatted JSON string
   static Future<String> exportEntriesToJson() async {
     try {
       final entries = await _repository.getAllEntries();
-      
+
       final exportData = entries.map((entry) => {
         'id': entry.id,
         'content': entry.text,
@@ -24,7 +101,8 @@ class BackupService {
       }).toList();
 
       final jsonData = {
-        'version': '1.0',
+        'version': currentVersion,
+        'appName': 'EchoJournal',
         'exportDate': DateTime.now().toIso8601String(),
         'totalEntries': entries.length,
         'entries': exportData,
@@ -36,14 +114,15 @@ class BackupService {
     }
   }
 
-  /// Save JSON data to local file
+  /// Save JSON data to local app documents file as a fallback
   static Future<String> saveBackupFile(String jsonData) async {
     try {
       final directory = await getApplicationDocumentsDirectory();
-      final timestamp = DateTime.now().toString().replaceAll(':', '-').replaceAll(' ', '_');
-      final fileName = 'echojournal_backup_$timestamp.json';
+      final now = DateTime.now();
+      final dateStr = '${now.year}${now.month.toString().padLeft(2, '0')}${now.day.toString().padLeft(2, '0')}_${now.hour.toString().padLeft(2, '0')}${now.minute.toString().padLeft(2, '0')}';
+      final fileName = 'echojournal_backup_$dateStr.json';
       final file = File('${directory.path}/$fileName');
-      
+
       await file.writeAsString(jsonData);
       return file.path;
     } catch (e) {
@@ -51,15 +130,14 @@ class BackupService {
     }
   }
 
-  /// Export and save entries to user-selected location
+  /// Export and save entries to a user-selected location
   static Future<String?> exportBackup() async {
     try {
-      // Generate JSON data
       final jsonData = await exportEntriesToJson();
+      final now = DateTime.now();
+      final dateStr = '${now.year}${now.month.toString().padLeft(2, '0')}${now.day.toString().padLeft(2, '0')}';
+      final fileName = 'echojournal_backup_$dateStr.json';
 
-      // Let user pick save location (desktop & supported mobile platforms).
-      // On Android/iOS, file_picker requires passing bytes when saving.
-      final fileName = 'echojournal_backup_${DateTime.now().year}${DateTime.now().month.toString().padLeft(2, '0')}${DateTime.now().day.toString().padLeft(2, '0')}.json';
       String? selectedPath;
       bool pickerSupported = true;
 
@@ -73,19 +151,14 @@ class BackupService {
           bytes: utf8.encode(jsonData),
         );
       } catch (_) {
-        // Some platforms (e.g. web) may not support saveFile.
         pickerSupported = false;
       }
 
-      // If the user explicitly canceled the file picker, return null to allow
-      // callers to treat it as a no-op instead of an error.
       if (pickerSupported && selectedPath == null) {
-        return null;
+        return null; // Explicit user cancellation
       }
 
       if (selectedPath != null) {
-        // In some environments (e.g. Android SAF) the returned path may not be a
-        // local file system path. Avoid attempting to write again in that case.
         if (_isLocalFilePath(selectedPath)) {
           final file = File(selectedPath);
           if (!await file.exists()) {
@@ -95,7 +168,6 @@ class BackupService {
         return selectedPath;
       }
 
-      // Fallback: save to app documents directory
       return await saveBackupFile(jsonData);
     } catch (e) {
       throw Exception('Failed to export backup: $e');
@@ -103,130 +175,168 @@ class BackupService {
   }
 
   static bool _isLocalFilePath(String path) {
-    // Covers UNIX-like and Windows file paths.
     return path.startsWith('/') || RegExp(r'^[a-zA-Z]:\\').hasMatch(path);
   }
 
-  /// Import entries from JSON file
-  static Future<ImportResult> importFromJson(String filePath) async {
+  /// Strictly validates backup data before touching the database
+  static ValidationResult validateBackupData(dynamic decodedJson) {
+    if (decodedJson is! Map<String, dynamic>) {
+      return ValidationResult.failure('Backup file is not a valid JSON object.');
+    }
+
+    final version = decodedJson['version']?.toString();
+    if (version == null || !supportedVersions.contains(version)) {
+      return ValidationResult.failure(
+        'Unsupported backup version: "${version ?? 'unknown'}". Supported versions: ${supportedVersions.join(', ')}.',
+      );
+    }
+
+    final rawEntries = decodedJson['entries'];
+    if (rawEntries is! List) {
+      return ValidationResult.failure('Backup missing "entries" list.');
+    }
+
+    final parsedEntries = <JournalEntryEntity>[];
+    for (int i = 0; i < rawEntries.length; i++) {
+      final item = rawEntries[i];
+      if (item is! Map) {
+        return ValidationResult.failure('Entry at index $i is not a valid object.');
+      }
+
+      final content = item['content'] ?? item['text'];
+      if (content == null || content is! String || content.trim().isEmpty) {
+        return ValidationResult.failure('Entry at index $i is missing content text.');
+      }
+
+      final createdAtRaw = item['createdAt'] ?? item['timestamp'];
+      if (createdAtRaw == null) {
+        return ValidationResult.failure('Entry at index $i is missing creation date.');
+      }
+
+      DateTime timestamp;
+      try {
+        timestamp = DateTime.parse(createdAtRaw.toString());
+      } catch (e) {
+        return ValidationResult.failure('Entry at index $i has invalid date format: $createdAtRaw');
+      }
+
+      final moodStr = item['mood']?.toString() ?? 'Calm';
+      final mood = Mood.fromString(moodStr);
+
+      final tagsRaw = item['tags'];
+      final List<String> tags = [];
+      if (tagsRaw is List) {
+        for (final tag in tagsRaw) {
+          if (tag != null) tags.add(tag.toString().trim());
+        }
+      }
+
+      parsedEntries.add(JournalEntryEntity(
+        id: null, // Let database generate id or manage it safely
+        text: content.trim(),
+        mood: mood,
+        timestamp: timestamp,
+        tags: tags,
+      ));
+    }
+
+    return ValidationResult.success(parsedEntries);
+  }
+
+  /// Import entries from a JSON file path with validation and de-duplication
+  static Future<ImportResult> importFromJson(
+    String filePath, {
+    ImportMode mode = ImportMode.merge,
+  }) async {
     try {
       final file = File(filePath);
       if (!await file.exists()) {
-        return ImportResult(
-          success: false,
-          error: 'File does not exist',
-          importedCount: 0,
-        );
+        return ImportResult.failure('File does not exist: ${getFileName(filePath)}');
       }
 
-      final jsonData = await file.readAsString();
-      final Map<String, dynamic> data = jsonDecode(jsonData);
-
-      // Validate file format
-      if (!_isValidBackupFormat(data)) {
-        return ImportResult(
-          success: false,
-          error: 'Invalid backup file format',
-          importedCount: 0,
-        );
+      final jsonContent = await file.readAsString();
+      dynamic decoded;
+      try {
+        decoded = jsonDecode(jsonContent);
+      } catch (e) {
+        return ImportResult.failure('Invalid JSON syntax: $e');
       }
 
-      final List<dynamic> entriesData = data['entries'];
+      final validation = validateBackupData(decoded);
+      if (!validation.isValid) {
+        return ImportResult.failure(validation.error ?? 'Validation failed.');
+      }
+
+      final entriesToImport = validation.validatedEntries;
       int importedCount = 0;
-      final List<String> errors = [];
+      int skippedDuplicates = 0;
+      final errors = <String>[];
 
-      for (final entryData in entriesData) {
-        try {
-          final entry = _parseEntryFromJson(entryData);
-          await _repository.saveEntry(entry);
-          importedCount++;
-        } catch (e) {
-          errors.add('Entry ${importedCount + 1}: $e');
+      if (mode == ImportMode.replace) {
+        await _repository.deleteAllEntries();
+        for (final entry in entriesToImport) {
+          try {
+            await _repository.saveEntry(entry);
+            importedCount++;
+          } catch (e) {
+            errors.add('Failed to import entry: $e');
+          }
+        }
+      } else {
+        // Merge mode: deduplicate against existing database entries
+        final existingEntries = await _repository.getAllEntries();
+        final existingSignatures = existingEntries
+            .map((e) => generateSignature(e.timestamp, e.text))
+            .toSet();
+
+        for (final entry in entriesToImport) {
+          final sig = generateSignature(entry.timestamp, entry.text);
+          if (existingSignatures.contains(sig)) {
+            skippedDuplicates++;
+            continue;
+          }
+
+          try {
+            await _repository.saveEntry(entry);
+            existingSignatures.add(sig);
+            importedCount++;
+          } catch (e) {
+            errors.add('Failed to import entry: $e');
+          }
         }
       }
 
       return ImportResult(
         success: true,
         importedCount: importedCount,
+        skippedDuplicates: skippedDuplicates,
+        totalEntries: entriesToImport.length,
         errors: errors,
-        totalEntries: entriesData.length,
       );
     } catch (e) {
-      return ImportResult(
-        success: false,
-        error: 'Failed to import backup: $e',
-        importedCount: 0,
-      );
+      return ImportResult.failure('Import failed: $e');
     }
   }
 
-  /// Pick and import JSON backup file
-  static Future<ImportResult> importBackup() async {
+  /// Pick and import a JSON backup file
+  static Future<ImportResult> importBackup({
+    ImportMode mode = ImportMode.merge,
+  }) async {
     try {
-      FilePickerResult? result = await FilePicker.platform.pickFiles(
+      final result = await FilePicker.platform.pickFiles(
         dialogTitle: 'Select EchoJournal Backup',
         type: FileType.custom,
         allowedExtensions: ['json'],
         lockParentWindow: true,
       );
 
-      if (result != null && result.files.single.path != null) {
-        return await importFromJson(result.files.single.path!);
-      } else {
-        return ImportResult(
-          success: false,
-          error: 'No file selected',
-          importedCount: 0,
-        );
+      if (result == null || result.files.isEmpty || result.files.single.path == null) {
+        return ImportResult.cancelled();
       }
+
+      return await importFromJson(result.files.single.path!, mode: mode);
     } catch (e) {
-      return ImportResult(
-        success: false,
-        error: 'Failed to pick file: $e',
-        importedCount: 0,
-      );
+      return ImportResult.failure('Failed to pick file: $e');
     }
   }
-
-  static bool _isValidBackupFormat(Map<String, dynamic> data) {
-    return data.containsKey('version') &&
-           data.containsKey('exportDate') &&
-           data.containsKey('totalEntries') &&
-           data.containsKey('entries') &&
-           data['entries'] is List;
-  }
-
-  static JournalEntryEntity _parseEntryFromJson(Map<String, dynamic> entryData) {
-    final moodString = entryData['mood'] as String;
-    final mood = Mood.values.firstWhere(
-      (m) => m.label.toLowerCase() == moodString.toLowerCase(),
-      orElse: () => Mood.calm,
-    );
-
-    return JournalEntryEntity(
-      id: null,
-      text: entryData['content'] as String,
-      mood: mood,
-      timestamp: DateTime.parse(entryData['createdAt'] as String),
-      tags: (entryData['tags'] as List<dynamic>?)?.map((e) => e.toString()).toList() ?? [],
-    );
-  }
-}
-
-class ImportResult {
-  final bool success;
-  final String? error;
-  final int importedCount;
-  final int totalEntries;
-  final List<String>? errors;
-
-  ImportResult({
-    required this.success,
-    this.error,
-    required this.importedCount,
-    this.totalEntries = 0,
-    this.errors,
-  });
-
-  bool get hasErrors => errors != null && errors!.isNotEmpty;
 }

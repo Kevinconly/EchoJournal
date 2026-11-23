@@ -34,6 +34,16 @@ class CachedRepository implements JournalRepository {
   }
 
   @override
+  Future<JournalEntryEntity?> getEntryById(int id) async {
+    // Check if present in cached all_entries
+    if (_cache.containsKey('all_entries')) {
+      final match = _cache['all_entries']!.where((e) => e.id == id);
+      if (match.isNotEmpty) return match.first;
+    }
+    return await _repository.getEntryById(id);
+  }
+
+  @override
   Future<void> saveEntry(JournalEntryEntity entry) async {
     try {
       await _repository.saveEntry(entry);

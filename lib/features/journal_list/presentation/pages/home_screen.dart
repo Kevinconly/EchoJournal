@@ -1,17 +1,16 @@
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
+import '../../../../core/constants/app_constants.dart';
+import '../../../../core/di/service_locator.dart';
+import '../../../../shared/utils/error_handler.dart';
+import '../../../../shared/widgets/animated_fab.dart';
 import '../../../journal_entry/domain/entities/journal_entry.dart';
 import '../../../journal_entry/domain/repositories/journal_repository.dart';
-import '../../../journal_entry/data/repositories/journal_repository_impl.dart';
-import '../../../journal_entry/domain/services/cached_repository.dart';
+import '../../../journal_entry/presentation/pages/journal_entry_screen.dart';
 import '../widgets/empty_state_widget.dart';
 import '../widgets/journal_card.dart';
 import 'entry_details_screen.dart';
 import 'insights_screen.dart';
 import 'settings_screen.dart';
-import '../../../journal_entry/presentation/pages/journal_entry_screen.dart';
-import '../../../../shared/widgets/animated_fab.dart';
-import '../../../../shared/utils/error_handler.dart';
-import '../../../../core/constants/app_constants.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -21,7 +20,7 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
-  late JournalRepository _repository;
+  late final JournalRepository _repository;
   List<JournalEntryEntity> _entries = [];
   List<JournalEntryEntity> _filteredEntries = [];
   bool _isLoading = true;
@@ -31,7 +30,7 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   void initState() {
     super.initState();
-    _repository = CachedRepository(JournalRepositoryImpl());
+    _repository = ServiceLocator.journalRepository;
     _loadEntries();
   }
 
@@ -47,20 +46,22 @@ class _HomeScreenState extends State<HomeScreen> {
         _isLoading = true;
         _error = null;
       });
-      
+
       final entries = await _repository.getAllEntries();
-      setState(() {
-        _entries = entries;
-        _filteredEntries = entries;
-        _isLoading = false;
-      });
-    } catch (e) {
-      setState(() {
-        _error = 'Failed to load entries';
-        _isLoading = false;
-      });
-      
       if (mounted) {
+        setState(() {
+          _entries = entries;
+          _isLoading = false;
+        });
+        _filterEntries(_searchController.text);
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _error = 'Failed to load entries';
+          _isLoading = false;
+        });
+
         AppErrorHandler.showErrorDialog(
           context,
           'Loading Error',
@@ -71,22 +72,29 @@ class _HomeScreenState extends State<HomeScreen> {
     }
   }
 
-  void _navigateToEntryDetails(JournalEntryEntity entry) {
-    Navigator.of(context).push(
+  Future<void> _navigateToEntryDetails(JournalEntryEntity entry) async {
+    final result = await Navigator.of(context).push<dynamic>(
       MaterialPageRoute(
         builder: (context) => EntryDetailsScreen(entry: entry),
       ),
     );
+
+    if (result != null && mounted) {
+      _loadEntries();
+    }
   }
 
   void _filterEntries(String query) {
+    final trimmed = query.trim().toLowerCase();
     setState(() {
-      if (query.isEmpty) {
+      if (trimmed.isEmpty) {
         _filteredEntries = _entries;
       } else {
         _filteredEntries = _entries.where((entry) {
-          return entry.text.toLowerCase().contains(query.toLowerCase()) ||
-                 entry.mood.label.toLowerCase().contains(query.toLowerCase());
+          final matchesText = entry.text.toLowerCase().contains(trimmed);
+          final matchesMood = entry.mood.label.toLowerCase().contains(trimmed);
+          final matchesTag = entry.tags.any((tag) => tag.toLowerCase().contains(trimmed));
+          return matchesText || matchesMood || matchesTag;
         }).toList();
       }
     });
@@ -108,12 +116,13 @@ class _HomeScreenState extends State<HomeScreen> {
         centerTitle: true,
         actions: [
           IconButton(
-            onPressed: () {
-              Navigator.of(context).push(
+            onPressed: () async {
+              await Navigator.of(context).push(
                 MaterialPageRoute(
                   builder: (context) => const SettingsScreen(),
                 ),
               );
+              _loadEntries(); // Refresh entries in case backup restore or clear occurred
             },
             icon: const Icon(Icons.settings_outlined),
             tooltip: 'Settings',
@@ -146,12 +155,12 @@ class _HomeScreenState extends State<HomeScreen> {
       body: Column(
         children: [
           // Search Bar
-          Container(
-            padding: const EdgeInsets.all(16),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
             child: TextField(
               controller: _searchController,
               decoration: InputDecoration(
-                hintText: 'Search entries...',
+                hintText: AppStrings.searchHint,
                 prefixIcon: const Icon(Icons.search),
                 suffixIcon: _searchController.text.isNotEmpty
                     ? IconButton(
@@ -171,7 +180,7 @@ class _HomeScreenState extends State<HomeScreen> {
               onChanged: _filterEntries,
             ),
           ),
-          
+
           // Content
           Expanded(
             child: RefreshIndicator(
@@ -183,12 +192,14 @@ class _HomeScreenState extends State<HomeScreen> {
       ),
       floatingActionButton: AnimatedFAB(
         onPressed: () async {
-          await Navigator.of(context).push(
+          final result = await Navigator.of(context).push(
             MaterialPageRoute(
               builder: (context) => const JournalEntryScreen(),
             ),
           );
-          _loadEntries(); // Refresh entries when coming back
+          if (result != null && mounted) {
+            _loadEntries();
+          }
         },
         icon: Icons.add,
         tooltip: 'Create new entry',
@@ -243,26 +254,25 @@ class _HomeScreenState extends State<HomeScreen> {
       return _buildEmptyState();
     }
 
-    return Padding(
+    return ListView.builder(
       padding: const EdgeInsets.all(AppConstants.defaultPadding),
-      child: ListView.builder(
-        itemCount: _filteredEntries.length,
-        itemBuilder: (context, index) {
-          final entry = _filteredEntries[index];
-          return JournalCard(
-            entry: entry,
-            searchQuery: _searchController.text,
-            onTap: () => _navigateToEntryDetails(entry),
-          );
-        },
-      ),
+      itemCount: _filteredEntries.length,
+      itemBuilder: (context, index) {
+        final entry = _filteredEntries[index];
+        return JournalCard(
+          entry: entry,
+          searchQuery: _searchController.text,
+          onTap: () => _navigateToEntryDetails(entry),
+        );
+      },
     );
   }
 
   Widget _buildEmptyState() {
     if (_searchController.text.isNotEmpty) {
       return Center(
-        child: Padding(
+        child: SingleChildScrollView(
+          physics: const AlwaysScrollableScrollPhysics(),
           padding: const EdgeInsets.all(AppConstants.defaultPadding),
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
@@ -279,10 +289,11 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
               const SizedBox(height: 8),
               Text(
-                'Try searching with different keywords',
+                'Try searching with different keywords, moods, or tags',
                 style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                   color: Theme.of(context).colorScheme.onSurfaceVariant,
                 ),
+                textAlign: TextAlign.center,
               ),
             ],
           ),

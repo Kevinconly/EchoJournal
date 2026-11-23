@@ -1,9 +1,10 @@
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
+import '../../../../core/theme/app_theme.dart';
 import '../../domain/entities/mood.dart';
 
 class MoodSelector extends StatelessWidget {
   final Mood? selectedMood;
-  final Function(Mood) onMoodSelected;
+  final ValueChanged<Mood> onMoodSelected;
 
   const MoodSelector({
     super.key,
@@ -13,55 +14,62 @@ class MoodSelector extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return SizedBox(
-      height: 80,
-      child: ListView.builder(
-        scrollDirection: Axis.horizontal,
-        itemCount: Mood.values.length,
-        itemBuilder: (context, index) {
-          final mood = Mood.values[index];
-          final isSelected = selectedMood == mood;
-          
-          return GestureDetector(
-            onTap: () => onMoodSelected(mood),
-            child: Container(
-              width: 70,
-              margin: const EdgeInsets.only(right: 8),
-              decoration: BoxDecoration(
-                color: isSelected 
-                  ? Theme.of(context).colorScheme.primaryContainer
-                  : Theme.of(context).colorScheme.surfaceContainerHighest,
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(
-                  color: isSelected 
-                    ? Theme.of(context).colorScheme.primary
-                    : Colors.transparent,
-                  width: 2,
+    final theme = Theme.of(context);
+
+    return Row(
+      children: Mood.values.map((mood) {
+        final isSelected = selectedMood == mood;
+        final moodColor = AppTheme.getMoodColor(mood.label);
+
+        return Expanded(
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 4),
+            child: InkWell(
+              onTap: () => onMoodSelected(mood),
+              borderRadius: BorderRadius.circular(12),
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 180),
+                curve: Curves.easeOutCubic,
+                padding: const EdgeInsets.symmetric(vertical: 10),
+                decoration: BoxDecoration(
+                  color: isSelected
+                      ? moodColor.withValues(alpha: 0.16)
+                      : theme.colorScheme.surfaceContainerLow,
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(
+                    color: isSelected
+                        ? moodColor
+                        : theme.colorScheme.outlineVariant,
+                    width: isSelected ? 1.5 : 1,
+                  ),
+                ),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      mood.emoji,
+                      style: const TextStyle(fontSize: 22),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      mood.label,
+                      style: theme.textTheme.labelSmall?.copyWith(
+                        fontSize: 11,
+                        fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
+                        color: isSelected
+                            ? moodColor
+                            : theme.colorScheme.onSurfaceVariant,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ],
                 ),
               ),
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Text(
-                    mood.emoji,
-                    style: const TextStyle(fontSize: 24),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    mood.label,
-                    style: TextStyle(
-                      fontSize: 10,
-                      color: isSelected 
-                        ? Theme.of(context).colorScheme.onPrimaryContainer
-                        : Theme.of(context).colorScheme.onSurfaceVariant,
-                    ),
-                  ),
-                ],
-              ),
             ),
-          );
-        },
-      ),
+          ),
+        );
+      }).toList(),
     );
   }
 }

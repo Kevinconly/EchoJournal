@@ -1,6 +1,5 @@
 plugins {
     id("com.android.application")
-    id("kotlin-android")
     // The Flutter Gradle Plugin must be applied after the Android and Kotlin Gradle plugins.
     id("dev.flutter.flutter-gradle-plugin")
 }
@@ -13,10 +12,6 @@ android {
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
-    }
-
-    kotlinOptions {
-        jvmTarget = JavaVersion.VERSION_17.toString()
     }
 
     defaultConfig {
@@ -37,16 +32,11 @@ android {
             signingConfig = signingConfigs.getByName("debug")
         }
     }
-    
-    // Add this to handle namespace issues with older packages
-    configurations.all {
-        resolutionStrategy {
-            eachDependency {
-                if ((requested.group == "com.android.tools.build") && (requested.name.startsWith("gradle"))) {
-                    useVersion("7.6.3")
-                }
-            }
-        }
+}
+
+kotlin {
+    compilerOptions {
+        jvmTarget = org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_17
     }
 }
 

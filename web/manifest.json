@@ -1,11 +1,11 @@
 {
-    "name": "reflectly_ai",
-    "short_name": "reflectly_ai",
+    "name": "EchoJournal",
+    "short_name": "EchoJournal",
     "start_url": ".",
     "display": "standalone",
     "background_color": "#0175C2",
     "theme_color": "#0175C2",
-    "description": "A new Flutter project.",
+    "description": "An offline-first Flutter journaling application for thoughtful reflection.",
     "orientation": "portrait-primary",
     "prefer_related_applications": false,
     "icons": [
